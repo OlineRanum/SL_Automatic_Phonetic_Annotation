@@ -62,34 +62,56 @@ class PoseFormatProssesor:
         return feat, conf
 
 class HamerProcessor:
-    def __init__(self, data):
-        self.data = data
+    def __init__(self):
+        pass
 
     def temporal_segmentation(self, hand, start_frame, end_frame):    
         return hand[start_frame:end_frame]
     
-    def clean_hamer_data(self, data):
+    def clean_hamer_list(self, hand):
         ''' As the hamer data contains empty frames, this function filters out the empty frames and returns the hand data in a cleaned format.
         This format has a regular shape and can be converted to a numpy array
         '''
-        hands = []
-        for hand in data:
-            try:
-                hand_array = np.array(hand)
-                hands.append(hand_array)
-            except:
-                filtered_hand_data = []
+        
+        filtered_hand_data = []
+        
+        for i in hand:
+            if len(i) != 0:
+                for j in i:
+                    filtered_hand_data.append(j)
+                    
+        filtered_hand_data = np.array(filtered_hand_data)
 
-                for i in hand:
-                    if len(i) != 0:
-                        for j in i:
-                            filtered_hand_data.append(j)
-                            
-                filtered_hand_data = np.array(filtered_hand_data)
-                hands.append(filtered_hand_data)
+        return filtered_hand_data
 
-        return hands
     
+    
+    def get_cleaned_hand(self, hands, handedness = 0):
+        if handedness == 'L':
+            hand = hands['l_hand']
+        elif handedness == 'R':
+            hand = hands['r_hand']
+        else:
+            print(handedness)
+            print('Unknown handedness, check handedness list')
+            exit()
+        
+        try:
+            processed_hand = np.array(hand)
+            
+        except:
+            
+            processed_hand = self.clean_hamer_list(hand)
+            
+            if processed_hand.shape == (0,) or processed_hand.ndim == 2:
+                raise ValueError()
+                #print('Hand data is empty')
+
+        if processed_hand.ndim == 4:
+            processed_hand = processed_hand.squeeze(1)
+        
+        return processed_hand
+
 
 class MediaPipeProcessor:
     def __init__(self, feat, conf):
@@ -110,3 +132,16 @@ class MediaPipeProcessor:
         conf_l = conf[:, :, -42:-21]  # Left hand confidence
 
         return feat_r, feat_l, conf_r, conf_l
+    
+    def crop_frames(self, data, fraction=3):
+        # Calculate the number of frames
+        N_frames = data.shape[0]
+        
+        # Calculate indices for cropping
+        start_idx = N_frames // fraction  # Start after the first 1/3
+        end_idx = 2 * N_frames // fraction  # End before the last 1/3
+        
+        # Crop the array
+        cropped_data = data[start_idx:end_idx, :, :]
+        
+        return cropped_data

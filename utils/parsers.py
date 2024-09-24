@@ -1,8 +1,9 @@
 from pose_format import Pose
 import numpy.ma as ma
 import numpy as np
-import pickle
-
+import pickle, os, json
+from PoseTools.utils.processors import HamerProcessor
+from tqdm import tqdm
 
 class PoseFormatParser:
     def __init__(self, path="A.pose"):
@@ -47,11 +48,27 @@ class PoseFormatParser:
 
 
 class PklParser: 
-    def __init__(self, path="A.pose"):
-        self.pose_path = path 
+    def __init__(self, input_path="A.pose", output_path = "A.pose"):
+        self.input_path = input_path
+        self.output_path = output_path
+
+    def read_pkl_simple(self):
+
+        # Open and load the pickle file
+        with open(self.input_path, 'rb') as file:
+            data = pickle.load(file)
+
+        # Now 'data' contains the contents of your pkl file
+        print('Pickled Data---------------')
+        print(data)
+        print(type(data['keypoints']))
+        print(type(data['confidences']))
+        print(data['keypoints'].shape)
+        print(data['confidences'].shape)
+        return data
 
     def read_pkl(self, format = 'normal'):
-        with open(self.pose_path, 'rb') as f:
+        with open(self.input_path, 'rb') as f:
             data = pickle.load(f)['keypoints']
             try:
                 conf = pickle.load(f)['confidence']
@@ -65,11 +82,35 @@ class PklParser:
                     return data, np.ones(data.shape)
                 if format == 'to_pose':
                     return np.expand_dims(data, axis=1), np.ones((data.shape[0], 1, data.shape[1]))
+                
+    def pose_conf_to_pkl(self, data, conf):
+        """
+        Save updated pose data to a file.
+        """
+
+        if isinstance(data, np.ndarray) and isinstance(conf, np.ndarray):
+            # Create the dictionary to be saved
+            data_dict = {
+                'keypoints': data,
+                'confidences': conf
+            }
+
+            # Save the dictionary to a pickle file
+            with open(self.output_path, 'wb') as file:
+                pickle.dump(data_dict, file)
+            
+            print(f"Data successfully saved to {self.output_path}")
+        else:
+            raise TypeError("Both data and conf must be numpy ndarrays.")
+
 
     
 class HamerParser:
-    def __init__(self, path="A.hamer"):
-        self.hamer_path = path
+    def __init__(self, input_folder, output_folder):
+        self.source_dir = input_folder
+        self.destination_dir = output_folder
+
+        self.processor = HamerProcessor()
 
     def read_hamer(self):
         import json
@@ -82,10 +123,82 @@ class HamerParser:
         l_hand = data.get('l_hand', [])
         r_hand = data.get('r_hand', [])
 
-        hands = self.filter_hand_data([l_hand, r_hand])
+        hands = self.processor.filter_hand_data([l_hand, r_hand])
         l_hand, r_hand = hands[0], hands[1]
 
         return l_hand, r_hand
+
+    
+    def hamer_to_pkl(self, pose_type):
+        """
+        Convert .hamer JSON files in source_dir to .pkl format with 'keypoints' key containing 'l_hand' data 
+        and save them in destination_dir.
+        
+        Args:
+            source_dir (str): Path to the directory containing the .hamer JSON files.
+            destination_dir (str): Path to the directory where .pkl files will be saved.
+        """
+        # Ensure the destination directory exists
+        os.makedirs(self.destination_dir, exist_ok=True)
+
+        handedness_dict = TxtParsers('PoseTools/results/handedness.txt').get_handedness_dict()
+
+        total = 0
+        left = 0
+        # Loop through all .hamer files in the source directory
+        files = os.listdir(self.source_dir)
+        for filename in tqdm(files, desc="Converting files"):
+            if filename.endswith("." + pose_type):
+                filepath = os.path.join(self.source_dir, filename)
+                
+                gloss = filename[:-(len(pose_type) + 1)]
+                
+                if "normalized_" in gloss:
+                    gloss = gloss.split('_', 1)[1]
+                if "_segment" in gloss:
+                    gloss = gloss.split('_', 1)[0]
+                
+                handedness = handedness_dict.get(gloss)
+
+                if handedness is None:
+                    #print(f"Unknown handedness for gloss: {gloss}")
+                    continue
+                
+                # Load the .hamer JSON file
+                with open(filepath, 'r') as f:
+                    data = json.load(f)
+                
+                try:
+                    data_filtered = self.processor.get_cleaned_hand(data, handedness)
+                
+                    if handedness == 'L':
+                        left += 1
+                    total += 1
+                    # Create a dictionary with the 'keypoints' key containing the l_hand array
+                    hand_data = {
+                        "keypoints": data_filtered
+                        
+                    }
+
+                    # Create the output filepath for the .pkl file
+                    output_filename = os.path.splitext(filename)[0] 
+                    if "normalized_" in output_filename:
+                        output_filename = output_filename.split('_', 1)[1]
+                    if "_segment" in filename:
+                        output_filename = output_filename.split('_', 1)[0]
+                    if ".pkl" not in output_filename:
+                        output_filename = output_filename + ".pkl"
+                    output_filepath = os.path.join(self.destination_dir, output_filename)
+
+                    # Save the dictionary as a .pkl file
+                    with open(output_filepath, 'wb') as pkl_file:
+                        pickle.dump(hand_data, pkl_file)
+                except:
+                    continue
+                #print(f"Converted {filename} to {output_filename}")
+        
+        print('Percentage of left handed signs', left/total)
+
 
                     
 class EafParser:
@@ -146,3 +259,30 @@ class EafParser:
                 gloss_dict[gloss] = [int(start_frame), int(end_frame)]
         
         return gloss_dict
+
+
+class TxtParsers:
+    def __init__(self, file_path="A.hamer"):
+        self.txt_file_path = file_path
+
+    def get_handedness_dict(self):
+        result_dict = {}
+        
+        with open(self.txt_file_path, 'r') as file:
+            for line in file:
+                line = line.strip()
+                
+                # Split the line at the comma
+                if ',' in line:
+                    key, value = line.split(',', 1)
+                    
+                    # Strip any extra whitespace around the key and value
+                    key = key.strip()
+                    value = value.strip()
+                    
+                    # Add key-value pair to the dictionary
+                    result_dict[key] = value
+
+        return result_dict
+
+

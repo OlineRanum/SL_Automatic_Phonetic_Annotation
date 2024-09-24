@@ -67,7 +67,7 @@ def process_direcotory(directory_path, output_file, filtered_file_path):
     #frames = get_frames("../pose/segmentation/timestamps.txt")
     
     # Open the handedness.txt file for writing
-    with open("PoseTools/handedness/output/handedness.txt", "w") as handedness_file:
+    with open("PoseTools/results/handedness.txt", "w") as handedness_file:
         i = 0
         l_hand = 0 
         
@@ -83,11 +83,11 @@ def process_direcotory(directory_path, output_file, filtered_file_path):
             # Determine handedness and write to file
             if integrated_l > integrated_r:
                 handedness_records.append(f"{pose_file}, L\n")
-                handedness_file.write(f"{pose_file}, L\n")
+                handedness_file.write(f"{pose_file[:-5]}, L\n")
                 l_hand += 1
             else:
                 handedness_records.append(f"{pose_file}, R\n")
-                handedness_file.write(f"{pose_file}, R\n")
+                handedness_file.write(f"{pose_file[:-5]}, R\n")
             
             integrated_velocities.append((integrated_r, integrated_l))
             
