@@ -1,0 +1,112 @@
+from pose_format import Pose
+import numpy.ma as ma
+import numpy as np
+import pickle
+
+
+class PoseFormatProssesor:
+    def __init__(self, path="A.pose"):
+        self.pose_path = path
+
+    def preprocess_pose(self, feat, conf):
+        # Trim 1/3 of the video from the start and the end
+        n_frames = feat.shape[0]  
+        trim_start = n_frames // 3  # Calculate the start index for trimming
+        trim_end = 2 * n_frames // 3  # Calculate the end index for trimming
+
+        feat = feat[trim_start:trim_end,:, :, :]
+        conf = conf[trim_start:trim_end, :, :]
+
+        # get the right hand
+        feat = feat[:, :, :543, :]
+        feat = feat[:, :, -21:, :].squeeze(1)
+
+        conf = conf[:, :, :543]
+        conf = conf[:, :, -21:]
+
+        # Normalize size
+        flat_array = feat.reshape(-1, 3)
+          
+        # Find the min and max for x and y coordinates
+        min_vals = np.min(flat_array, axis=0)  # Min of x and y
+        max_vals = np.max(flat_array, axis=0)  # Max of x and y
+        
+        # Normalize the array
+        # This is a simple min max norm 
+        feat = (feat - min_vals) / (max_vals - min_vals)
+        
+        # Temporal Normalization	
+        keypoints_array_squeezed = feat  # Shape (num_frames, num_keypoints, 3)
+        for i in range(keypoints_array_squeezed.shape[0]):
+            keypoints = keypoints_array_squeezed[i]  # Shape (num_keypoints, 3)
+
+            # Check if there are enough keypoints to access the 6th one
+            if keypoints.shape[0] > 6:
+                # Extract x, y, and z coordinates
+                x, y, z = keypoints[:, 0], keypoints[:, 1], keypoints[:, 2]
+
+                # Subtract the 6th keypoint's x, y, and z coordinates to normalize all dimensions
+                x_shifted = x - x[6]
+                y_shifted = y - y[6]
+                z_shifted = z - z[6]
+
+                # Update the keypoints array with the shifted x, y, and z coordinates
+                keypoints_array_squeezed[i, :, 0] = x_shifted
+                keypoints_array_squeezed[i, :, 1] = y_shifted
+                keypoints_array_squeezed[i, :, 2] = z_shifted
+
+        # Reshape back to the original format (num_frames, 1, num_keypoints, 3)
+        feat = keypoints_array_squeezed
+        feat =  keypoints_array_squeezed[:, np.newaxis, :, :]
+
+        return feat, conf
+
+class HamerProcessor:
+    def __init__(self, data):
+        self.data = data
+
+    def temporal_segmentation(self, hand, start_frame, end_frame):    
+        return hand[start_frame:end_frame]
+    
+    def clean_hamer_data(self, data):
+        ''' As the hamer data contains empty frames, this function filters out the empty frames and returns the hand data in a cleaned format.
+        This format has a regular shape and can be converted to a numpy array
+        '''
+        hands = []
+        for hand in data:
+            try:
+                hand_array = np.array(hand)
+                hands.append(hand_array)
+            except:
+                filtered_hand_data = []
+
+                for i in hand:
+                    if len(i) != 0:
+                        for j in i:
+                            filtered_hand_data.append(j)
+                            
+                filtered_hand_data = np.array(filtered_hand_data)
+                hands.append(filtered_hand_data)
+
+        return hands
+    
+
+class MediaPipeProcessor:
+    def __init__(self, feat, conf):
+        self.feat, self.conf = feat, conf
+
+    def get_hands(self):
+        """ Extract hands from MediaPipe pose format
+        """
+        # Remove lower body data, not visible in SB films
+        feat = self.feat[:, :, :543, :]
+        conf = self.conf[:, :, :543]
+        
+        # Only one signer in SB videos
+        feat_r = feat[:, :, -21:, :].squeeze(1)  # Right hand keypoints
+        feat_l = feat[:, :, -42:-21, :].squeeze(1)  # Left hand keypoints
+
+        conf_r = conf[:, :, -21:]  # Right hand confidence
+        conf_l = conf[:, :, -42:-21]  # Left hand confidence
+
+        return feat_r, feat_l, conf_r, conf_l
