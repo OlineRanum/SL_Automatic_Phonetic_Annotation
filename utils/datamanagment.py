@@ -59,7 +59,7 @@ class FileConverters:
     def __init__(self):
         pass
 
-    def to_pkl(self, input_folder, output_folder, pose_type = 'pose'):
+    def to_pkl(self, input_folder, output_folder, pose_type = 'pose', multi_hands = False):
         """
         Iterate over all pose files in the input folder, preprocess them, and save them to the output folder.
         """
@@ -71,6 +71,7 @@ class FileConverters:
             pkl_parser = PklParser(output_folder)
             for filename in tqdm(files, desc="Processing files"):
                 if filename.endswith("."+ pose_type):
+                    
                     input_path = os.path.join(input_folder, filename)
 
                     #print(f"Processing {filename}...")
@@ -83,6 +84,10 @@ class FileConverters:
             
         if pose_type == 'hamer' or pose_type == 'json':
             hamer_parser = HamerParser(input_folder, output_folder)
-            hamer_parser.hamer_to_pkl(pose_type)                
+            if multi_hands:
+
+                hamer_parser.hamer_to_pkl(pose_type, multi_handedness_classes = True)
+            else:
+                hamer_parser.hamer_to_pkl(pose_type)                
 
         

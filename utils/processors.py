@@ -74,39 +74,53 @@ class HamerProcessor:
         '''
         
         filtered_hand_data = []
-        
-        for i in hand:
-            if len(i) != 0:
-                for j in i:
-                    filtered_hand_data.append(j)
+        json = True
+        if json:
+            for i in hand:
+                if len(i) != 0:
+                    filtered_hand_data.append(i)
+        else:
+            for i in hand:
+                if len(i) != 0:
+                    for j in i:
+                        filtered_hand_data.append(j)
                     
         filtered_hand_data = np.array(filtered_hand_data)
-
+        
         return filtered_hand_data
 
     
     
     def get_cleaned_hand(self, hands, handedness = 0):
-        if handedness == 'L':
-            hand = hands['l_hand']
-        elif handedness == 'R':
-            hand = hands['r_hand']
-        else:
-            print(handedness)
-            print('Unknown handedness, check handedness list')
-            exit()
-        
+        try:
+            if handedness == 'L':
+                hand = hands['l_hand']
+            elif handedness == 'R':
+                hand = hands['r_hand']
+            else:
+                print(handedness)
+                print('Unknown handedness, check handedness list')
+                exit()
+        except KeyError:
+            return None
         try:
             processed_hand = np.array(hand)
             
         except:
-            
             processed_hand = self.clean_hamer_list(hand)
             
             if processed_hand.shape == (0,) or processed_hand.ndim == 2:
-                raise ValueError()
+                print(handedness, processed_hand.shape) 
+                return None
                 #print('Hand data is empty')
-
+    
+        if processed_hand.shape == (0,):
+                print(handedness, processed_hand.shape) 
+                return None
+    
+        if processed_hand.ndim == 2:
+            print(handedness, processed_hand.shape)
+            return None
         if processed_hand.ndim == 4:
             processed_hand = processed_hand.squeeze(1)
         

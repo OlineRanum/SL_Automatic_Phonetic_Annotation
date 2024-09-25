@@ -127,9 +127,87 @@ class HamerParser:
         l_hand, r_hand = hands[0], hands[1]
 
         return l_hand, r_hand
-
     
-    def hamer_to_pkl(self, pose_type):
+
+    def update_handedness_dict_from_json(self, json_file, handedness_dict):
+        # Load the JSON data
+        with open(json_file, 'r') as f:
+            gloss_data = json.load(f)
+
+        # Iterate over gloss entries
+        for gloss_entry in gloss_data:
+            gloss = gloss_entry['gloss']
+            instances = gloss_entry['instances']
+
+            # Iterate over instances for the current gloss
+            for instance in instances:
+                video_id = instance['video_id']
+
+                # Check if the video_id exists in the handedness_dict
+                if video_id not in handedness_dict:
+                    # Extract the handedness from the video_id by getting the last character (either 'L' or 'R')
+                    handedness = video_id.split('-')[-1]
+
+                    # Add new entry to the handedness_dict with video_id as the key and handedness ('L' or 'R') as the value
+                    handedness_dict[video_id] = handedness
+
+        return handedness_dict
+
+    def extend_handedness_dict(self, handedness_dict):
+        extended_dict = {}
+
+        # Loop through the existing handedness dictionary
+        for video_id, handedness in handedness_dict.items():
+            # Get the corresponding gloss from gloss_dict
+            
+            if video_id:  # If the gloss exists for this video_id
+                # Modify the key to be of the form gloss-handedness
+                new_key = f"{video_id}-{handedness}"
+                extended_dict[new_key] = handedness
+        
+        json_file = 'PoseTools/data/metadata/metadata_1_2s.json'
+        extended_dict = self.update_handedness_dict_from_json(json_file, extended_dict)
+        
+        return extended_dict
+
+    def process_hamer_file(self, filepath, filename, handedness):
+        # Load the .hamer JSON file
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+        
+        data_filtered = self.processor.get_cleaned_hand(data, handedness)
+        if data_filtered is None:
+            print('File Corrupted ', filename)
+            return None
+            
+        
+        # Create a dictionary with the 'keypoints' key containing the l_hand array
+        hand_data = {
+            "keypoints": data_filtered
+            
+        }
+
+        # Create the output filepath for the .pkl file
+        output_filename = os.path.splitext(filename)[0] 
+        if "normalized_" in output_filename:
+            output_filename = output_filename.split('_', 1)[1]
+        if "_segment" in filename:
+            output_filename = output_filename.split('_', 1)[0]
+        if '.' in filename:
+            output_filename = output_filename.replace('.', '-')
+        output_filename = output_filename + f"-{handedness}"
+        if ".pkl" not in output_filename:
+            output_filename = output_filename + ".pkl"
+        
+        output_filepath = os.path.join(self.destination_dir, output_filename)
+
+        # Save the dictionary as a .pkl file
+        with open(output_filepath, 'wb') as pkl_file:
+            pickle.dump(hand_data, pkl_file)
+    
+        
+    
+    def hamer_to_pkl(self, pose_type, multi_handedness_classes = False):
         """
         Convert .hamer JSON files in source_dir to .pkl format with 'keypoints' key containing 'l_hand' data 
         and save them in destination_dir.
@@ -142,8 +220,10 @@ class HamerParser:
         os.makedirs(self.destination_dir, exist_ok=True)
 
         handedness_dict = TxtParsers('PoseTools/results/handedness.txt').get_handedness_dict()
+        if multi_handedness_classes:
+            handedness_dict = self.extend_handedness_dict(handedness_dict)
 
-        total = 0
+        total = 1
         left = 0
         # Loop through all .hamer files in the source directory
         files = os.listdir(self.source_dir)
@@ -158,46 +238,35 @@ class HamerParser:
                 if "_segment" in gloss:
                     gloss = gloss.split('_', 1)[0]
                 
-                handedness = handedness_dict.get(gloss)
+                if not multi_handedness_classes:
+                    handedness = handedness_dict.get(gloss)
 
-                if handedness is None:
-                    #print(f"Unknown handedness for gloss: {gloss}")
-                    continue
-                
-                # Load the .hamer JSON file
-                with open(filepath, 'r') as f:
-                    data = json.load(f)
-                
-                try:
-                    data_filtered = self.processor.get_cleaned_hand(data, handedness)
-                
-                    if handedness == 'L':
-                        left += 1
-                    total += 1
-                    # Create a dictionary with the 'keypoints' key containing the l_hand array
-                    hand_data = {
-                        "keypoints": data_filtered
+                    if handedness is None:
+                        #print(f"Unknown handedness for gloss: {gloss}")
+                        continue
+                    else:
+                        self.process_hamer_file( filepath, filename, handedness)
+                    
+                    #print(f"Converted {filename} to {output_filename}")
+                else:
+                    
+                    if handedness_dict.get(gloss + '-L') is not None:
                         
-                    }
-
-                    # Create the output filepath for the .pkl file
-                    output_filename = os.path.splitext(filename)[0] 
-                    if "normalized_" in output_filename:
-                        output_filename = output_filename.split('_', 1)[1]
-                    if "_segment" in filename:
-                        output_filename = output_filename.split('_', 1)[0]
-                    if ".pkl" not in output_filename:
-                        output_filename = output_filename + ".pkl"
-                    output_filepath = os.path.join(self.destination_dir, output_filename)
-
-                    # Save the dictionary as a .pkl file
-                    with open(output_filepath, 'wb') as pkl_file:
-                        pickle.dump(hand_data, pkl_file)
-                except:
-                    continue
-                #print(f"Converted {filename} to {output_filename}")
-        
+                        self.process_hamer_file(filepath, filename, 'L')
+                        left += 1
+                        total += 1
+                    
+                    if handedness_dict.get(gloss + '-R') is not None:
+                        
+                        self.process_hamer_file(filepath, filename, 'R')
+                        total += 1
+            
+        print('Total number of processed files', total)
         print('Percentage of left handed signs', left/total)
+
+        
+
+
 
 
                     
