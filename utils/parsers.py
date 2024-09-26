@@ -67,22 +67,31 @@ class PklParser:
         print(data['confidences'].shape)
         return data
 
-    def read_pkl(self, format = 'normal'):
+    def read_pkl(self, format = 'normal', input_path = None):
+        if input_path is not None:
+            self.input_path = input_path
+        
         with open(self.input_path, 'rb') as f:
-            data = pickle.load(f)['keypoints']
-            try:
-                conf = pickle.load(f)['confidence']
-                if format == 'normal':
-                    return data, conf
-                if format == 'to_pose':
-                    return np.expand_dims(data, axis=1), np.expand_dims(data, axis=1)
+            # Load the whole data dictionary in one go
+            data_dict = pickle.load(f)
+            
+            data = data_dict.get('keypoints', None)
+            conf = data_dict.get('confidence', None)
 
-            except:
-                if format == 'normal':
-                    return data, np.ones(data.shape)
-                if format == 'to_pose':
-                    return np.expand_dims(data, axis=1), np.ones((data.shape[0], 1, data.shape[1]))
-                
+            if data is None:
+                raise ValueError("Key 'keypoints' not found in the pickle file")
+            
+            # If confidence data is not available, use default ones
+            if conf is None:
+                conf = np.ones((data.shape[0], data.shape[1]))
+
+            if format == 'normal':
+                return data, conf
+            elif format == 'to_pose':
+                return np.expand_dims(data, axis=1), np.expand_dims(conf, axis=1)
+            else:
+                raise ValueError("Unknown format specified")
+                    
     def pose_conf_to_pkl(self, data, conf):
         """
         Save updated pose data to a file.
@@ -106,11 +115,12 @@ class PklParser:
 
     
 class HamerParser:
-    def __init__(self, input_folder, output_folder):
+    def __init__(self, input_folder = None, output_folder= None):
         self.source_dir = input_folder
         self.destination_dir = output_folder
 
         self.processor = HamerProcessor()
+        self.corrupted_files = 0
 
     def read_hamer(self):
         import json
@@ -153,7 +163,7 @@ class HamerParser:
 
         return handedness_dict
 
-    def extend_handedness_dict(self, handedness_dict):
+    def extend_handedness_dict(self, handedness_dict, dict_file):
         extended_dict = {}
 
         # Loop through the existing handedness dictionary
@@ -165,19 +175,37 @@ class HamerParser:
                 new_key = f"{video_id}-{handedness}"
                 extended_dict[new_key] = handedness
         
-        json_file = 'PoseTools/data/metadata/metadata_1_2s.json'
+        json_file = dict_file
         extended_dict = self.update_handedness_dict_from_json(json_file, extended_dict)
         
         return extended_dict
 
     def process_hamer_file(self, filepath, filename, handedness):
         # Load the .hamer JSON file
-        with open(filepath, 'r') as f:
-            data = json.load(f)
-        
+        try:
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+        except:
+            try:
+                with open(filepath.replace('-','.'), 'r') as f:
+                    data = json.load(f)
+            except:
+                try:
+                    # Replace the last '.' with '-' (handle cases like 6.ORD-B)
+                    filepath_parts = filepath.rpartition('.')
+                    modified_filepath = filepath_parts[0] + '-' + filepath_parts[2]
+                    print(modified_filepath)
+                    with open(modified_filepath, 'r') as f:
+                        data = json.load(f)
+                except FileNotFoundError:
+                    print(f"File not found in any format: {filepath}")
+
+
+
         data_filtered = self.processor.get_cleaned_hand(data, handedness)
         if data_filtered is None:
             print('File Corrupted ', filename)
+            self.corrupted_files += 1
             return None
             
         
@@ -207,7 +235,7 @@ class HamerParser:
     
         
     
-    def hamer_to_pkl(self, pose_type, multi_handedness_classes = False):
+    def hamer_to_pkl(self, pose_type, dict_file, external_dict_file = None, multi_handedness_classes = False):
         """
         Convert .hamer JSON files in source_dir to .pkl format with 'keypoints' key containing 'l_hand' data 
         and save them in destination_dir.
@@ -219,9 +247,10 @@ class HamerParser:
         # Ensure the destination directory exists
         os.makedirs(self.destination_dir, exist_ok=True)
 
-        handedness_dict = TxtParsers('PoseTools/results/handedness.txt').get_handedness_dict()
+        handedness_dict = TxtParsers(dict_file).get_handedness_dict()
+        
         if multi_handedness_classes:
-            handedness_dict = self.extend_handedness_dict(handedness_dict)
+            handedness_dict = self.extend_handedness_dict(handedness_dict, external_dict_file)
 
         total = 1
         left = 0
@@ -264,6 +293,32 @@ class HamerParser:
         print('Total number of processed files', total)
         print('Percentage of left handed signs', left/total)
 
+
+    def hamer_to_pkl_2a(self, pose_type, dict_file, external_dict_file = None, convert2a = True):
+        """
+        Convert .hamer JSON files in source_dir to .pkl format with 'keypoints' key containing 'l_hand' data 
+        and save them in destination_dir.
+        
+        Args:
+            source_dir (str): Path to the directory containing the .hamer JSON files.
+            destination_dir (str): Path to the directory where .pkl files will be saved.
+        """
+        # Ensure the destination directory exists
+        os.makedirs(self.destination_dir, exist_ok=True)
+        
+        handedness_dict = TxtParsers(dict_file).get_handedness_dict(convert2a)
+        total = 1
+        
+        for filename in tqdm(handedness_dict, desc="Converting files"):
+            filepath = os.path.join(self.source_dir, 'normalized_' + filename + "_segment." + pose_type)
+            
+            
+            for handedness in ['L', 'R']:
+                self.process_hamer_file( filepath, filename, handedness)
+                
+            total += 1       
+        print('Number of corrupted files', self.corrupted_files)    
+        print('Total number of processed files', total)
         
 
 
@@ -334,8 +389,11 @@ class TxtParsers:
     def __init__(self, file_path="A.hamer"):
         self.txt_file_path = file_path
 
-    def get_handedness_dict(self):
-        result_dict = {}
+    def get_handedness_dict(self, convert2a = False):
+        if convert2a:
+            result_dict = []
+        else:
+            result_dict = {}
         
         with open(self.txt_file_path, 'r') as file:
             for line in file:
@@ -350,7 +408,10 @@ class TxtParsers:
                     value = value.strip()
                     
                     # Add key-value pair to the dictionary
-                    result_dict[key] = value
+                    if convert2a:
+                        result_dict.append(key)
+                    else:
+                        result_dict[key] = value
 
         return result_dict
 

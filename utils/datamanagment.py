@@ -59,7 +59,7 @@ class FileConverters:
     def __init__(self):
         pass
 
-    def to_pkl(self, input_folder, output_folder, pose_type = 'pose', multi_hands = False):
+    def to_pkl(self, input_folder, output_folder, dict_file, external_dict_file, pose_type = 'pose', multi_hands = False, convert2a = False):
         """
         Iterate over all pose files in the input folder, preprocess them, and save them to the output folder.
         """
@@ -86,8 +86,40 @@ class FileConverters:
             hamer_parser = HamerParser(input_folder, output_folder)
             if multi_hands:
 
-                hamer_parser.hamer_to_pkl(pose_type, multi_handedness_classes = True)
+                hamer_parser.hamer_to_pkl(pose_type, dict_file, external_dict_file, multi_handedness_classes = True)
+            elif convert2a:
+                hamer_parser.hamer_to_pkl_2a(pose_type, dict_file, external_dict_file, convert2a = convert2a)
             else:
-                hamer_parser.hamer_to_pkl(pose_type)                
+                hamer_parser.hamer_to_pkl(pose_type, dict_file)                
+
 
         
+    def to_pose(self, input_folder, output_folder, pose_type = 'pkl', multi_hands = False):
+        """
+        Iterate over all pose files in the input folder, preprocess them, and save them to the output folder.
+        """
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+        
+        files = os.listdir(input_folder)
+        if pose_type == 'pkl':
+            pkl_parser = PklParser(output_folder)
+            for filename in tqdm(files, desc="Processing files"):
+                if filename.endswith("."+ pose_type):
+                    
+                    input_path = os.path.join(input_folder, filename)
+                    pose, conf = pkl_parser.read_pkl(format = 'to_pose', input_path = input_path)
+                    
+                    print(pose.shape, conf.shape)
+                    # Save processed pose to output folder
+                    print(output_folder)
+                    pose_folder = '../signbank_videos'
+                    filename_ = filename.replace(".pkl", "")[:-2] + ".pose"
+                    pose_path = os.path.join(pose_folder, filename_)
+                    
+                    
+                    pose_loader = PoseFormatParser(pose_path)
+                    pose, conf = pose_loader.read_pose()
+                    output_path = os.path.join(output_folder, filename.replace(".pkl", ".pose"))
+                    pose_loader.write_pose(pose, conf, save_path = output_path)
+                    
