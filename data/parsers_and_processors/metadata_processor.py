@@ -1,3 +1,4 @@
+from PoseTools.data.parsers_and_processors.processors import TxtProcessor
 import pandas as pd
 import numpy as np
 import json
@@ -8,28 +9,29 @@ import sys
 # Variables
 ###############################################
 number_handshape_classes = 60
-handedness_classes = ['1', '2s', '2a']
+handedness_classes = ['1', '2s', '2a', '2t']
 no_handshapechanges = False
-num_test = 50  # Number of test samples per class
-num_validation = 100  # Number of validation samples per class
+num_test = 200  # Number of test samples per class
+num_validation = 200  # Number of validation samples per class
 property = 'Handedness'  # Alternative: 'Strong Hand', 'Handedness'
-output_folder = 'handedness_1_2s_2a'
+output_folder = 'handedness_1_2'
+finegrained_handedness = False
 
 # ----------------------------------------------
 # Paths
 ###############################################
-json_file_path = 'PoseTools/data/metadata/json_files/glosses_meta.json'
-h1_file_path = 'PoseTools/results/handedness.txt'
-dict_2a_file = 'PoseTools/results/2a_handedness.txt'
+json_file_path = 'PoseTools/data/metadata/glosses_meta.json'
+h1_file_path = 'PoseTools/results/handedness/handedness.txt'
+dict_2a_file = 'PoseTools/results/handedness/2a_handedness.txt'
 package_path = os.path.abspath('../')  # Adjust this path as needed
 txt_file_path = 'PoseTools/data/metadata/txt_files/metadata_test.txt'
-video_ids_file = 'PoseTools/data/metadata/txt_files/corrupted.txt'
-output_json = 'PoseTools/data/metadata/output/'+output_folder+'/metadata_2c.json'
+video_ids_file = 'PoseTools/data/metadata/corrupted.txt'
+output_json = 'PoseTools/data/metadata/output/'+output_folder+'/metadata.json'
 value_to_id_file = 'PoseTools/data/metadata/output/'+output_folder+'/value_to_id.txt'
 
 normalized_subdirectory = '../signbank_videos/segmented_videos/output'
-segmented_subdirectory = '../signbank_videos/segmented_videos'
-pkl_subdirectory = 'PoseTools/data/datasets/hamer_1_2s_2a/normalized'
+segmented_subdirectory ='../signbank_videos/segmented_videos'
+pkl_subdirectory = None # 'PoseTools/data/datasets/hamer_1_2s_2a/normalized'
 
 split_files = {
     'test': 'PoseTools/data/metadata/output/'+output_folder+'/test.txt',
@@ -42,8 +44,6 @@ split_files = {
 ###############################################
 if package_path not in sys.path:
     sys.path.append(package_path)
-
-from PoseTools.utils.processors import TxtProcessor
 
 # ----------------------------------------------
 # Load JSON file and convert to DataFrame
@@ -82,12 +82,15 @@ def file_exists_segmented(row):
 
 
 # Filter the DataFrame based on whether the file exists
-n_df = df[df.apply(file_exists_normalized, axis=1)]
-s_df = df[df.apply(file_exists_segmented, axis=1)]
+if normalized_subdirectory is not None:
+    n_df = df[df.apply(file_exists_normalized, axis=1)]
+    print('The minimum set is n_df')
+    df = n_df.copy()
+if segmented_subdirectory is not None:
+    s_df = df[df.apply(file_exists_segmented, axis=1)]
 
 
-print('The minimum set is n_df')
-df = n_df.copy()
+
 
 # Print counts of 'Handedness', 'Strong Hand', and 'Weak Hand'
 print('Handedness------------------')
@@ -229,12 +232,14 @@ def process_glosses_for_handedness(df):
     for _, row in df.iterrows():
         handedness = row['Handedness']
 
-        if handedness == '1' or handedness == '2s':
+        if handedness == '1':
             processed_rows.append(row)
-            
-        elif handedness == '2a':
+        
+        elif handedness == '2s' or handedness == '2a' or handedness == '2t':
             row_r = row.copy()
             # TODO: Remove
+            if not finegrained_handedness:
+                row_r['Handedness'] = '2'
             processed_rows.append(row_r)
             
             
@@ -316,7 +321,8 @@ def file_exists_pkl(row):
     file_path = os.path.join(pkl_subdirectory, filename)
     return os.path.isfile(file_path)
 
-#df = df[df.apply(file_exists_pkl, axis=1)]
+if pkl_subdirectory is not None:
+    df = df[df.apply(file_exists_pkl, axis=1)]
 
 # ----------------------------------------------
 # Save Split Files

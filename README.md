@@ -7,13 +7,23 @@ This repository contains code to process poses, with functionalities for automat
 To prepare json files or txt files to train and evaluate models, rund module
 
 ``` Prepare metadata
-python -m PoseTools.data.metadata.utils.build_metadata
+python -m PoseTools.data.parsers_and_processors.metadata_processor
 ```
 
 Variables and relevant paths are set on the top of the build_metadata script. 
 
 ## Pose extraction 
-To perform pose extraction we use the PoseFormat library 
+To perform pose extraction we use the [PoseFormat library](https://github.com/sign-language-processing/pose), which can be installed with pip
+``` 
+pip install pose-format
+```
+
+To convert a video to pose:
+``` 
+video_to_pose --format mediapipe -i example.mp4 -o example.pose
+# Or if you have a directory of videos
+videos_to_poses --format mediapipe --directory /path/to/videos
+```
 
 ## Pose convertion 
 
@@ -23,6 +33,26 @@ TBI.
 ## Handedness 
 ### Evaluate number of signing hands
 To evaluate wheter one or two hands are signing 
+
+``` Train NHands model 
+python -m PoseTools.src.models.slgcn.train_slgcn --config handedness.yaml
+```
+
+``` Evaluate NHands model 
+# Evaluate test set
+python -m PoseTools.src.models.slgcn.test_slgcn
+
+# Evaluate single video
+python -m PoseTools.src.models.slgcn.eval_slgcn --pose hi.pkl
+```
+
+#### Experimental evaluation of available models 
+
+| Model | Checkpoints   | Classes | Train/Val/Test | a1   | a2   | rr   |
+|-------|---------------|---------|----------------|------|------|------|
+| SLGCN | nhands.ckpt    | 2       | 3739/376/382     | 0.95 | 1.00 | 0.97 |
+
+### Something
 
 ``` Evaluate number of signing hands 
 python -m PoseTools.handedness.evaluate_hand_number
