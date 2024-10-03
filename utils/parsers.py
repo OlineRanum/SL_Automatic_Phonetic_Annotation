@@ -9,21 +9,43 @@ class PoseFormatParser:
     def __init__(self, path="A.pose"):
         self.pose_path = path
 
-    def read_pose(self):
+    def read_pose(self, n_points = None):
         """
         Load pose data from the file.
 
         :return: Tuple of numpy data and confidence measure.
         """
-        with open(self.pose_path, "rb") as file:
-            data_buffer = file.read()
-        
-        self.pose = Pose.read(data_buffer)
-        
+        try:
+            # Attempt to open the initial path
+            with open(self.pose_path, "rb") as file:
+                data_buffer = file.read()
+        except FileNotFoundError:
+            import re
+            # Try replacing the first '-' after the number with a '.'
+            new_path = re.sub(r'(\d)-', r'\1.', self.pose_path, 1)
+            print(f"First fallback path: {new_path}")
+            
+            try:
+                with open(new_path, "rb") as file:
+                    data_buffer = file.read()
+            except FileNotFoundError:
+                # Try replacing '-PL' with '.PL'
+                new_path = re.sub(r'-PL', r'.PL', new_path, 1)
+                print(f"Second fallback path: {new_path}")
+                
+                try:
+                    with open(new_path, "rb") as file:
+                        data_buffer = file.read()
+                except FileNotFoundError:
+                    return None, None
+
+        self.pose = Pose.read(data_buffer, n_points = n_points)
+
         data = self.pose.body.data.data
         conf = self.pose.body.confidence
 
         return data, conf
+
 
     def write_pose(self, data, conf, save_path="updated_pose.pose"):
         """
@@ -40,11 +62,13 @@ class PoseFormatParser:
 
         self.pose.body.data = masked_data
         self.pose.body.confidence = conf
+        self.pose.body.frames = data.shape[0]
+        
 
         with open(save_path, "wb") as f:
             self.pose.write(f)
         
-        print(f"Pose data updated and saved to {save_path}")
+        #print(f"Pose data updated and saved to {save_path}")
 
 
 class PklParser: 
@@ -74,10 +98,9 @@ class PklParser:
         with open(self.input_path, 'rb') as f:
             # Load the whole data dictionary in one go
             data_dict = pickle.load(f)
-            
             data = data_dict.get('keypoints', None)
             conf = data_dict.get('confidence', None)
-
+            
             if data is None:
                 raise ValueError("Key 'keypoints' not found in the pickle file")
             
@@ -108,7 +131,7 @@ class PklParser:
             with open(self.output_path, 'wb') as file:
                 pickle.dump(data_dict, file)
             
-            print(f"Data successfully saved to {self.output_path}")
+            #print(f"Data successfully saved to {self.output_path}")
         else:
             raise TypeError("Both data and conf must be numpy ndarrays.")
 
@@ -385,7 +408,7 @@ class EafParser:
         return gloss_dict
 
 
-class TxtParsers:
+class TxtParser:
     def __init__(self, file_path="A.hamer"):
         self.txt_file_path = file_path
 
@@ -414,5 +437,10 @@ class TxtParsers:
                         result_dict[key] = value
 
         return result_dict
+    
+    def read_json(self):
+        with open(self.txt_file_path, 'r') as f:
+            data = json.load(f)
+        return data
 
 

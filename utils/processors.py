@@ -1,6 +1,8 @@
 from pose_format import Pose
 import numpy.ma as ma
 import numpy as np
+import os
+
 import pickle
 
 
@@ -159,3 +161,67 @@ class MediaPipeProcessor:
         cropped_data = data[start_idx:end_idx, :, :]
         
         return cropped_data
+
+class TxtProcessor:
+    def __init__(self, path):
+        self.path = path
+
+    def read_txt(self):
+        with open(self.path, 'r') as f:
+            data = f.readlines()
+        return data
+
+    def write_txt(self, data):
+        with open(self.path, 'w') as f:
+            for line in data:
+                f.write(line)
+
+    def get_2a_dict(self):
+        data = self.read_txt()
+        # Initialize an empty dictionary
+        result_dict = {}
+
+        # Assuming `data` is a list of strings, process each line
+        for line in data:
+            # Split each line by comma
+            parts = line.split(',')
+
+            # The leftmost entry is the key (strip whitespace if needed)
+            key = parts[0].strip()
+
+            # The rightmost entry is the value (strip whitespace if needed)
+            value = parts[-1].strip()
+
+            # Add the key-value pair to the dictionary
+            result_dict[key] = value
+
+        return result_dict
+    
+class PklProcessor:
+    def __init__(self, path):
+        self.path = path
+
+    def process_directory(self):
+        for filename in tqdm(files, desc="Processing files"):
+            if filename.endswith("."+ pose_type):
+                
+                input_path = os.path.join(input_folder, filename)
+
+        
+                pose_loader = PoseFormatParser(input_path)
+                pose, conf = pose_loader.read_pose()
+                pose = self.pose_selector(pose.squeeze(1))
+                conf = self.pose_selector(conf.squeeze(1))
+                
+                base, ext = os.path.splitext(filename)
+                base = base.replace(".", "-")
+                output_file = base + ".pkl"
+                output_file = os.path.join(output_folder, output_file)            
+                pkl_parser = PklParser(output_path = output_file)
+                pkl_parser.pose_conf_to_pkl(pose, conf)
+    
+
+if __name__ == "__main__":
+    processor = TxtProcessor('PoseTools/results/2a_handedness.txt')
+    data = processor.updatde_2a()
+    print(data)
