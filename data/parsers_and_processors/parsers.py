@@ -2,7 +2,7 @@ from pose_format import Pose
 import numpy.ma as ma
 import numpy as np
 import pickle, os, json
-from PoseTools.utils.processors import HamerProcessor
+from PoseTools.data.parsers_and_processors.processors import HamerProcessor
 from tqdm import tqdm
 
 class PoseFormatParser:

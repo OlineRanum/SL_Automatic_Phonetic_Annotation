@@ -1,9 +1,9 @@
 import os
 import json
 from tqdm import tqdm
-from PoseTools.src.utils.parsers_and_processors.processors import PklProcessor
-from PoseTools.src.utils.parsers_and_processors.parsers import PoseFormatParser, PklParser, HamerParser
-from PoseTools.src.utils.parsers_and_processors.preprocessing import PoseSelect
+from PoseTools.data.parsers_and_processors.processors import PklProcessor
+from PoseTools.data.parsers_and_processors.parsers import PoseFormatParser, PklParser, HamerParser
+from PoseTools.src.utils.preprocessing import PoseSelect
 
 class FileOrganizer:
     def __init__(self):
@@ -74,6 +74,7 @@ class FileConverters:
                     
                     pose = self.preprocess_pose(pose)
                     conf = self.preprocess_pose(conf)
+                    print(pose.shape, conf.shape)
                     
                     base, ext = os.path.splitext(filename)
                     base = base.replace(".", "-")

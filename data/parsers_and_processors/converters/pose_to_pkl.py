@@ -1,7 +1,7 @@
-from PoseTools.utils.datamanagment import FileConverters
+from PoseTools.data.parsers_and_processors.datamanagment import FileConverters
 
-input_folder = "../signbank_videos/"
-output_folder = "PoseTools/data/datasets/mp"
+input_folder = "PoseTools/data/datasets/example_data"
+output_folder = "PoseTools/data/datasets/example_data"
 
 fc = FileConverters()
 print('Converting...')
