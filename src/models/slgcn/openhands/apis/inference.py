@@ -96,6 +96,7 @@ class InferenceModel(pl.LightningModule):
 
         for batch in dataloader:
             y_hat = self.model(batch["frames"].to(self._device))
+            
     
             y_true = [path2gloss[path.split("/")[-1].replace(".pkl","")] \
                 if path.split("/")[-1].replace(".pkl","") in path2gloss.keys() else None
@@ -151,6 +152,12 @@ class InferenceModel(pl.LightningModule):
         print(results_stats["nonlex"])
         json.dump(results, open(self.cfg.data.test_pipeline.results,"w+"), indent=4)
         json.dump(results_stats, open(self.cfg.data.test_pipeline.results[:-5] + "_summary.json","w+"), indent=4)
+
+    def apply_model(self, x):
+        """
+        Applies the model to the input tensor.
+        """
+        return self.model(x.to(self._device))
 
     def compute_test_accuracy(self):
         """

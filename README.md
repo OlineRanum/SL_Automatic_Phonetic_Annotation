@@ -43,7 +43,7 @@ python -m PoseTools.src.models.slgcn.train_slgcn --config handedness.yaml
 python -m PoseTools.src.models.slgcn.test_slgcn
 
 # Evaluate single video
-python -m PoseTools.src.models.slgcn.eval_slgcn --pose hi.pkl
+python -m PoseTools.src.models.slgcn.eval_slgcn --input_path path/to/video/video.pkl
 ```
 
 #### Experimental evaluation of available models 
