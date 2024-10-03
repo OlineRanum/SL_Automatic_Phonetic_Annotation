@@ -1,4 +1,14 @@
+# Folders
+## Data
 data/datasets/
+data/metadata/json_files/
+data/metadata/output/
+data/metadata/txt_files/
+
+
+## Graphics
+handedness/graphics/reference_poses/
+handedness/graphics/velocity_profiles/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
