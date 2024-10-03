@@ -1,7 +1,7 @@
 from PoseTools.utils.datamanagment import FileConverters
 
-input_folder = "PoseTools/data/datasets/hamer_1_2s/normalized"
-output_folder = "PoseTools/data/datasets/hamer_1_2s/normalized/pose"
+input_folder = "PoseTools/data/datasets/mp"
+output_folder = "PoseTools/data/datasets/mp_pose"
 
 fc = FileConverters()
 print('Converting...')
