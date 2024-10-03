@@ -1,9 +1,9 @@
 import os
 import json
 from tqdm import tqdm
-from PoseTools.utils.processors import HamerProcessor, PklProcessor
-from PoseTools.utils.parsers import PoseFormatParser, PklParser, HamerParser
-from PoseTools.utils.preprocessing import PoseSelect
+from PoseTools.src.utils.parsers_and_processors.processors import PklProcessor
+from PoseTools.src.utils.parsers_and_processors.parsers import PoseFormatParser, PklParser, HamerParser
+from PoseTools.src.utils.parsers_and_processors.preprocessing import PoseSelect
 
 class FileOrganizer:
     def __init__(self):
