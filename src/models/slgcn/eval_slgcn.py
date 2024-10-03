@@ -45,7 +45,8 @@ def main():
 
     # Convert to PyTorch tensor and preprocess
     pose = torch.from_numpy(pose).float()
-    pose = preprocessor(pose.permute(2, 0, 1))  # Rearrange (T, V, C) to (C, T, V)
+    pose = pose.permute(2, 0, 1)
+    pose = preprocessor(pose)  # Rearrange (T, V, C) to (C, T, V)
 
     # Add batch dimension
     pose = pose.unsqueeze(0)  # Convert to shape (N=1, C, T, V)
