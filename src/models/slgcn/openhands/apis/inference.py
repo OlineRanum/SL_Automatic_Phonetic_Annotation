@@ -94,6 +94,7 @@ class InferenceModel(pl.LightningModule):
             }
         }
 
+        rows = []
         for batch in dataloader:
             y_hat = self.model(batch["frames"].to(self._device))
             
@@ -101,6 +102,7 @@ class InferenceModel(pl.LightningModule):
             y_true = [path2gloss[path.split("/")[-1].replace(".pkl","")] \
                 if path.split("/")[-1].replace(".pkl","") in path2gloss.keys() else None
                 for path in batch["files"] ]
+            
 
             y_hat_gloss = y_hat[0].cpu()
             y_true_gloss = [gt for gt in y_true]
@@ -121,6 +123,7 @@ class InferenceModel(pl.LightningModule):
                     "a3" : y_true[sample_idx] in rankings[:3],
                     "rank" : rankings.index(y_true[sample_idx])
                 }
+                rows.append(row)
                 if path2split[row["id"]] != "test" : continue
 
                 results_stats["all"]["a1"].append(row["a1"])
@@ -141,7 +144,14 @@ class InferenceModel(pl.LightningModule):
 
 
                 json.dump(row, open(self.cfg.data.test_pipeline.results,"a+"), indent=4)
-                
+        # Create a pandas DataFrame from the list of rows
+        import pandas as pd
+        df = pd.DataFrame(rows)
+
+        # Dump the DataFrame to a CSV file
+        df.to_csv('PoseTools/results/logs/output.csv', index=False)  # Set index=False to avoid writing the row numbers
+
+
 
         for split in results_stats.keys():
             for metric in results_stats[split].keys():

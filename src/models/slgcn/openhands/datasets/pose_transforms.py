@@ -283,6 +283,7 @@ class CenterAndScaleNormalize:
         frame_level (bool): Whether to center and normalize at frame level or clip level. Default: ``False``
     """
     REFERENCE_PRESETS = {
+        "hamer_preset": [3, 4],
         "shoulder_mediapipe_holistic_minimal_27": [3, 4],
         "shoulder_mediapipe_holistic_top_body_59": [11, 12],
     }
