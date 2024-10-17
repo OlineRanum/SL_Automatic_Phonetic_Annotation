@@ -126,10 +126,11 @@ class PklParser:
                 'keypoints': data,
                 'confidences': conf
             }
-
+            print(data)
             # Save the dictionary to a pickle file
             with open(self.output_path, 'wb') as file:
                 pickle.dump(data_dict, file)
+            print(self.output_path)
             
             #print(f"Data successfully saved to {self.output_path}")
         else:
@@ -270,7 +271,7 @@ class HamerParser:
         # Ensure the destination directory exists
         os.makedirs(self.destination_dir, exist_ok=True)
 
-        handedness_dict = TxtParsers(dict_file).get_handedness_dict()
+        handedness_dict = TxtParser(dict_file).get_handedness_dict()
         
         if multi_handedness_classes:
             handedness_dict = self.extend_handedness_dict(handedness_dict, external_dict_file)
@@ -316,6 +317,37 @@ class HamerParser:
         print('Total number of processed files', total)
         print('Percentage of left handed signs', left/total)
 
+    def hamer_to_pkl_nodict(self, pose_type):
+        """
+        Convert .hamer JSON files in source_dir to .pkl format with 'keypoints' key containing 'l_hand' data 
+        and save them in destination_dir.
+        
+        Args:
+            source_dir (str): Path to the directory containing the .hamer JSON files.
+            destination_dir (str): Path to the directory where .pkl files will be saved.
+        """
+        # Ensure the destination directory exists
+        os.makedirs(self.destination_dir, exist_ok=True)
+        print(self.source_dir)
+        # Loop through all .hamer files in the source directory
+        files = os.listdir(self.source_dir)
+        
+        for filename in tqdm(files, desc="Converting files"):
+            if filename.endswith("." + pose_type):
+                
+                filepath = os.path.join(self.source_dir, filename)
+                
+                gloss = filename[:-(len(pose_type) + 1)]
+                
+                if "normalized_" in gloss:
+                    gloss = gloss.split('_', 1)[1]
+                if "_segment" in gloss:
+                    gloss = gloss.split('_', 1)[0]
+                
+                        
+                self.process_hamer_file(filepath, filename, 'L')    
+                self.process_hamer_file(filepath, filename, 'R')
+    
 
     def hamer_to_pkl_2a(self, pose_type, dict_file, external_dict_file = None, convert2a = True):
         """
@@ -329,7 +361,7 @@ class HamerParser:
         # Ensure the destination directory exists
         os.makedirs(self.destination_dir, exist_ok=True)
         
-        handedness_dict = TxtParsers(dict_file).get_handedness_dict(convert2a)
+        handedness_dict = TxtParser(dict_file).get_handedness_dict(convert2a)
         total = 1
         
         for filename in tqdm(handedness_dict, desc="Converting files"):

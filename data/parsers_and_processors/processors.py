@@ -86,7 +86,8 @@ class HamerProcessor:
                 if len(i) != 0:
                     for j in i:
                         filtered_hand_data.append(j)
-                    
+        
+        print(filtered_hand_data)
         filtered_hand_data = np.array(filtered_hand_data)
         
         return filtered_hand_data

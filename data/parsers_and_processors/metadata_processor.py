@@ -8,36 +8,47 @@ import sys
 # ----------------------------------------------
 # Variables
 ###############################################
-number_handshape_classes = 60
-handedness_classes = ['1', '2s', '2a', '2t']
-no_handshapechanges = False
-num_test = 200  # Number of test samples per class
-num_validation = 200  # Number of validation samples per class
-property = 'Handedness'  # Alternative: 'Strong Hand', 'Handedness'
-output_folder = 'handedness_1_2'
+
+number_handshape_classes = 20
+handedness_classes = ['1', '2s']
+no_handshapechanges = True
+num_test = 10  # Number of test samples per class
+num_validation = 10  # Number of validation samples per class
+property = 'Strong Hand'  # Alternative: 'Strong Hand', 'Handedness'
+output_folder = '20c_1000'
+output_filename = '20c_1000'
 finegrained_handedness = False
+
+use_extention = True
+num_instances = 1000
 
 # ----------------------------------------------
 # Paths
 ###############################################
 json_file_path = 'PoseTools/data/metadata/glosses_meta.json'
-h1_file_path = 'PoseTools/results/handedness/handedness.txt'
+h1_file_path = 'PoseTools/results/handedness/hamer_pkl/handedness_1.txt'
 dict_2a_file = 'PoseTools/results/handedness/2a_handedness.txt'
 package_path = os.path.abspath('../')  # Adjust this path as needed
 txt_file_path = 'PoseTools/data/metadata/txt_files/metadata_test.txt'
 video_ids_file = 'PoseTools/data/metadata/corrupted.txt'
-output_json = 'PoseTools/data/metadata/output/'+output_folder+'/metadata.json'
+output_json = 'PoseTools/data/metadata/output/'+output_folder+'/'+output_filename+'.json'
 value_to_id_file = 'PoseTools/data/metadata/output/'+output_folder+'/value_to_id.txt'
 
-normalized_subdirectory = '../signbank_videos/segmented_videos/output'
-segmented_subdirectory ='../signbank_videos/segmented_videos'
-pkl_subdirectory = None # 'PoseTools/data/datasets/hamer_1_2s_2a/normalized'
+normalized_subdirectory = None #'../signbank_videos/segmented_videos/output'
+segmented_subdirectory =None #'../signbank_videos/segmented_videos'
+pkl_subdirectory = '../../../../mnt/fishbowl/gomer/oline/hamer_pkl' # 'PoseTools/data/datasets/hamer_1_2s_2a/normalized'
 
 split_files = {
     'test': 'PoseTools/data/metadata/output/'+output_folder+'/test.txt',
     'val': 'PoseTools/data/metadata/output/'+output_folder+'/val.txt',
     'train': 'PoseTools/data/metadata/output/'+output_folder+'/train.txt'
 }
+
+
+# Check if the directory exists
+if not os.path.exists('PoseTools/data/metadata/output/'+output_folder):
+    # Create the directory if it does not exist
+    os.makedirs('PoseTools/data/metadata/output/'+output_folder)
 
 # ----------------------------------------------
 # Set up package path for PoseTools
@@ -66,102 +77,7 @@ def json_to_dataframe(data):
 data = load_json(json_file_path)
 df = json_to_dataframe(data)
 
-# ----------------------------------------------
-# Match with Data from Directories
-###############################################
-
-def file_exists_normalized(row):
-    filename = f"normalized_{row['Annotation ID Gloss: Dutch']}_segment.json"
-    file_path = os.path.join(normalized_subdirectory, filename)
-    return os.path.isfile(file_path)
-
-def file_exists_segmented(row):
-    filename = f"{row['Annotation ID Gloss: Dutch']}_segment.hamer"
-    file_path = os.path.join(segmented_subdirectory, filename)
-    return os.path.isfile(file_path)
-
-
-# Filter the DataFrame based on whether the file exists
-if normalized_subdirectory is not None:
-    n_df = df[df.apply(file_exists_normalized, axis=1)]
-    print('The minimum set is n_df')
-    df = n_df.copy()
-if segmented_subdirectory is not None:
-    s_df = df[df.apply(file_exists_segmented, axis=1)]
-
-
-
-
-# Print counts of 'Handedness', 'Strong Hand', and 'Weak Hand'
-print('Handedness------------------')
-print(df.value_counts('Handedness'))
-print('Strong hand------------------')
-print(df.value_counts('Strong Hand'))
-print('Weak hand------------------')
-print(df.value_counts('Weak Hand'))
-
-# ----------------------------------------------
-# Select Top N Handshape Classes
-###############################################
-
-def select_num_classes(df, num_classes=35):
-    strong_hand_counts = df['Strong Hand'].value_counts()
-    print("\nValue counts for 'Strong Hand':")
-    print(strong_hand_counts[0:num_classes])
-    print("Total samples in top classes:", sum(strong_hand_counts[0:num_classes]))
-
-    top_values = strong_hand_counts.head(num_classes).index
-    return df[df['Strong Hand'].isin(top_values)].copy()
-
-df = select_num_classes(df, num_classes=number_handshape_classes)
-print("Number of classes after selection:", len(df['Strong Hand'].value_counts()))
-
-# ----------------------------------------------
-# Randomize and Reset Index
-###############################################
-
-def randomize_and_reset_index(df):
-    return df.sample(frac=1, random_state=1).reset_index(drop=True)
-
-df = randomize_and_reset_index(df)
-
-# ----------------------------------------------
-# Filter Handedness Classes
-###############################################
-
-def filter_on_handedness(df, handedness_labels):
-    df = df[df['Handedness'].isin(handedness_labels)]
-    return df
-
-# Filter with a list of handedness labels
-print('\n-----------------------------------------------------\n ')
-df = filter_on_handedness(df, handedness_classes)
-print('Total number of datapoints available after filtering on handedness:', df.shape[0])
-
-# ----------------------------------------------
-# Drop Handshape Changes
-###############################################
-
-def drop_handshapechanges(df):
-    df = df[df['Handshape Change'].isna()]
-    print(df['Handshape Change'].value_counts(dropna=False))
-    return df.copy()
-
-if no_handshapechanges:
-    df = drop_handshapechanges(df)
-    print('Total number of datapoints available after dropping handshape changes:', df.shape[0])
-
-# ----------------------------------------------
-# Fix Label Names
-###############################################
-
-df['Annotation ID Gloss: Dutch'] = df['Annotation ID Gloss: Dutch'].str.replace('.', '-')
-df.reset_index(drop=True, inplace=True)
-
-for gloss in df['Annotation ID Gloss: Dutch']:
-    if '.' in gloss:
-        print(gloss)
-        exit()
+print(len(df['Strong Hand'].value_counts()))
 
 # ----------------------------------------------
 # Add Handedness RL Label
@@ -246,7 +162,6 @@ def process_glosses_for_handedness(df):
     
     return pd.DataFrame(processed_rows)
 
-print(df[property].value_counts())
 # Process glosses
 if property == 'Handedness':
     df = process_glosses_for_handedness(df)
@@ -254,7 +169,134 @@ elif property == 'Strong Hand':
     df = process_glosses_for_handshape(df, h1_dict, dict_2a=dict_2a)
 else:
     exit()
-print(df[property].value_counts())
+
+# ----------------------------------------------
+# Remove Corrupted Files
+###############################################
+
+with open(video_ids_file, 'r') as file:
+    corrupted_video_ids = [line.strip() for line in file.readlines()]
+
+
+print('Total number of datapoints available before removing corrupted files:', df.shape[0])
+df = df[~df['Annotation ID Gloss: Dutch'].isin(corrupted_video_ids)]
+print('Total number of datapoints available after removing corrupted files:', df.shape[0])
+df.reset_index(drop=True, inplace=True)
+
+# ----------------------------------------------
+# Match with Data from Directories
+###############################################
+
+def file_exists_normalized(row):
+    filename = f"normalized_{row['Annotation ID Gloss: Dutch']}_segment.json"
+    file_path = os.path.join(normalized_subdirectory, filename)
+    return os.path.isfile(file_path)
+
+def file_exists_segmented(row):
+    filename = f"{row['Annotation ID Gloss: Dutch']}_segment.hamer"
+    file_path = os.path.join(segmented_subdirectory, filename)
+    return os.path.isfile(file_path)
+
+def file_exists_pkl(row):
+    filename = f"{row['Annotation ID Gloss: Dutch']}.pkl"
+    file_path = os.path.join(pkl_subdirectory, filename)
+    return os.path.isfile(file_path)
+
+
+# Filter the DataFrame based on whether the file exists
+if normalized_subdirectory is not None:
+    n_df = df[df.apply(file_exists_normalized, axis=1)]
+    print('The minimum set is n_df')
+    df = n_df.copy()
+if segmented_subdirectory is not None:
+    s_df = df[df.apply(file_exists_segmented, axis=1)]
+if pkl_subdirectory is not None:
+    df = df[df.apply(file_exists_pkl, axis=1)]
+
+
+# Print counts of 'Handedness', 'Strong Hand', and 'Weak Hand'
+# Print counts of 'Handedness', 'Strong Hand', and 'Weak Hand'
+print('\nOriginal Values ------------------------------------------------------------\n')
+print(df.value_counts('Handedness').head(number_handshape_classes))
+print(df.value_counts('Strong Hand').head(number_handshape_classes))
+print(df.value_counts('Weak Hand').head(number_handshape_classes))
+print('Total number of datapoints', df.shape[0])
+print('\n-----------------------------------------------------------------------------\n')
+
+# ----------------------------------------------
+# Filter Handedness Classes
+###############################################
+
+def filter_on_handedness(df, handedness_labels):
+    df = df[df['Handedness'].isin(handedness_labels)]
+    print('Total number of datapoints available after filtering on handedness:', df.shape[0])
+    return df
+
+# Filter with a list of handedness labels
+df = filter_on_handedness(df, handedness_classes)
+print(df.value_counts('Strong Hand').head(number_handshape_classes))
+
+# ----------------------------------------------
+# Drop Handshape Changes
+###############################################
+
+def drop_handshapechanges(df):
+    df = df[df['Handshape Change'].isna()]
+    print(df['Handshape Change'].value_counts(dropna=False))
+    return df.copy()
+
+if no_handshapechanges:
+    df = drop_handshapechanges(df)
+    print('Total number of datapoints available after dropping handshape changes:', df.shape[0])
+
+print(df.value_counts('Strong Hand').head(number_handshape_classes))
+print('\n-----------------------------------------------------------------------------\n')
+
+# ----------------------------------------------
+# Select Top N Handshape Classes
+###############################################
+
+def select_num_classes(df, num_classes=35):
+    strong_hand_counts = df['Strong Hand'].value_counts()
+    print("\nValue counts for 'Strong Hand':")
+    print(strong_hand_counts[0:num_classes])
+    print("Total samples in top classes:", sum(strong_hand_counts[0:num_classes]))
+
+    top_values = strong_hand_counts.head(num_classes).index
+    return df[df['Strong Hand'].isin(top_values)].copy()
+
+if use_extention is False:
+    df = select_num_classes(df, num_classes=number_handshape_classes)
+    df = df.groupby('Strong Hand').head(num_instances)
+    
+
+    print("Number of classes after selection:", len(df['Strong Hand'].value_counts()))
+    print(df['Strong Hand'].value_counts())
+    
+print('\n-----------------------------------------------------------------------------\n')
+
+# ----------------------------------------------
+# Randomize and Reset Index
+###############################################
+
+def randomize_and_reset_index(df):
+    return df.sample(frac=1, random_state=1).reset_index(drop=True)
+
+df = randomize_and_reset_index(df)
+
+# ----------------------------------------------
+# Fix Label Names
+###############################################
+
+df['Annotation ID Gloss: Dutch'] = df['Annotation ID Gloss: Dutch'].str.replace('.', '-')
+df.reset_index(drop=True, inplace=True)
+
+for gloss in df['Annotation ID Gloss: Dutch']:
+    if '.' in gloss:
+        print(gloss)
+        exit()
+
+
 # ----------------------------------------------
 # Add Split to DataFrame
 ###############################################
@@ -275,29 +317,40 @@ def add_split(df, num_test=15, num_validation=15):
 
 df = add_split(df, num_test=num_test, num_validation=num_validation)
 print(df['split'].value_counts())
+print('\n-----------------------------------------------------------------------------\n')
 
-# ----------------------------------------------
-# Remove Corrupted Files
-###############################################
-
-with open(video_ids_file, 'r') as file:
-    corrupted_video_ids = [line.strip() for line in file.readlines()]
-
-
-print('Total number of datapoints available before removing corrupted files:', df.shape[0])
-df = df[~df['Annotation ID Gloss: Dutch'].isin(corrupted_video_ids)]
-print('Total number of datapoints available after removing corrupted files:', df.shape[0])
-df.reset_index(drop=True, inplace=True)
 
 # ----------------------------------------------
 # Map Property to Unique IDs
 ###############################################
 
-unique_values = df[property].unique()
-value_to_id = {value: idx for idx, value in enumerate(unique_values, start=1)}
+#unique_values = df[property].unique()
+#value_to_id = {value: idx for idx, value in enumerate(unique_values, start=1)}
+#print("Mapping of property values to IDs:", value_to_id)
+#df['letter_id'] = df[property].map(value_to_id)
+#print(df['letter_id'].value_counts())
+def load_value_to_id_mapping(file_path):
+    value_to_id = {}
+    with open(file_path, 'r') as file:
+        for line in file:
+            key, val = line.strip().split(':')
+            key = key.strip()  # Remove any extra spaces around the key
+            val = int(val.strip())  # Convert the value to an integer and remove extra spaces
+            value_to_id[key] = val
+    return value_to_id
+
+# Example usage
+file_path = 'PoseTools/data/metadata/output/global_value_to_id.txt'  # Path to your .txt file
+
+# Load the mapping from the file
+value_to_id = load_value_to_id_mapping(file_path)
 print("Mapping of property values to IDs:", value_to_id)
+
+# Map the values in the dataframe column to the letter IDs from the file
 df['letter_id'] = df[property].map(value_to_id)
-print(df['letter_id'].value_counts())
+print(len(df['letter_id'].value_counts()))
+
+print('\n-----------------------------------------------------------------------------\n')
 
 # ----------------------------------------------
 # Write Value ID Mapping to Text File
@@ -308,35 +361,44 @@ def write_dict_to_txt(dictionary, filename):
         for key, value in dictionary.items():
             f.write(f"{key}: {value}\n")
 
-write_dict_to_txt(value_to_id, value_to_id_file)
-print(f"Value to ID mapping has been written to {value_to_id_file}")
+#write_dict_to_txt(value_to_id, value_to_id_file)
 
-
-
-# ----------------------------------------------
-# Check PKL
-###############################################
-def file_exists_pkl(row):
-    filename = f"{row['Annotation ID Gloss: Dutch']}.pkl"
-    file_path = os.path.join(pkl_subdirectory, filename)
-    return os.path.isfile(file_path)
-
-if pkl_subdirectory is not None:
-    df = df[df.apply(file_exists_pkl, axis=1)]
+df = select_num_classes(df, num_classes=number_handshape_classes)
+df['source'] = 'SignBank'
 
 # ----------------------------------------------
-# Save Split Files
+# Add extension
 ###############################################
 
-def save_split_files(df, split_files):
-    for split, file_path in split_files.items():
-        split_df = df[df['split'] == split]
-        print(f"Saving {split} split with {len(split_df)} samples to {file_path}")
-        with open(file_path, 'w', encoding='utf-8') as file:
-            for lemma in split_df['Annotation ID Gloss: Dutch']:
-                file.write(lemma + '\n')
+if use_extention:
+    df_extention = pd.read_csv('PoseTools/results/hamer/handedness.txt', sep=",", header=None, names=['Handedness', 'Annotation ID Gloss: Dutch', 'Key', 'Strong Hand'])
+    # Remove leading/trailing spaces from 'Strong Hand' and 'Annotation ID Gloss: Dutch' columns
+    df_extention['Strong Hand'] = df_extention['Strong Hand'].str.strip()
+    df_extention['Annotation ID Gloss: Dutch'] = df_extention['Annotation ID Gloss: Dutch'].str.strip()
 
-save_split_files(df, split_files)
+    df_extention['letter_id'] = df_extention['Strong Hand'].map(value_to_id) #.fillna(-1).astype(int)
+    
+    # Remove rows where 'letter_id' is -1 (invalid mappings)
+    df_extention = df_extention[df_extention['letter_id'] != -1]
+
+    df_extention['source'] = 'NGTCorpus'
+    df_extention = randomize_and_reset_index(df_extention)
+    
+    df_extended = pd.concat([df, df_extention], ignore_index=True)
+    df_extended = df_extended.drop_duplicates(subset='Annotation ID Gloss: Dutch')
+    df = select_num_classes(df_extended, num_classes=number_handshape_classes)
+    # For each class, take up to 500 instances
+    df = df.groupby('Strong Hand').head(num_instances)
+    df = randomize_and_reset_index(df)
+    percentile_10_per_class = int(len(df) // 10 // number_handshape_classes) 
+    df = add_split(df, num_test=percentile_10_per_class, num_validation=percentile_10_per_class)
+
+print(df['source'].value_counts())
+print(df['split'].value_counts())
+print(df['Strong Hand'].value_counts())
+
+print('\n-----------------------------------------------------------------------------\n')
+
 
 # ----------------------------------------------
 # Write Metadata to JSON File
@@ -423,3 +485,18 @@ def save_to_txt(df, file_path):
 
 save_to_txt(df, txt_file_path)
 print(f"\nFiltered data has been written to {txt_file_path}")
+
+
+# ----------------------------------------------
+# Save Split Files
+###############################################
+
+def save_split_files(df, split_files):
+    for split, file_path in split_files.items():
+        split_df = df[df['split'] == split]
+        print(f"Saving {split} split with {len(split_df)} samples to {file_path}")
+        with open(file_path, 'w', encoding='utf-8') as file:
+            for lemma in split_df['Annotation ID Gloss: Dutch']:
+                file.write(lemma + '\n')
+
+save_split_files(df, split_files)

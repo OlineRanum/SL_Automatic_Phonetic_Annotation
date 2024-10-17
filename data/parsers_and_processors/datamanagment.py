@@ -85,11 +85,20 @@ class FileConverters:
             
         if pose_type == 'hamer' or pose_type == 'json':
             hamer_parser = HamerParser(input_folder, output_folder)
+            print(input_folder, output_folder)
+            
             if multi_hands:
+                print("Multi-handedness classes")
                 hamer_parser.hamer_to_pkl(pose_type, dict_file, external_dict_file, multi_handedness_classes = True)
             elif convert2a:
+                print("Convert to 2A")
                 hamer_parser.hamer_to_pkl_2a(pose_type, dict_file, external_dict_file, convert2a = convert2a)
+            elif dict_file is None:
+                print("No dictionary file")
+                
+                hamer_parser.hamer_to_pkl_nodict(pose_type)
             else:
+                print("Normal")
                 hamer_parser.hamer_to_pkl(pose_type, dict_file)                
 
 
@@ -131,4 +140,59 @@ class FileConverters:
                         
                         pose_loader.write_pose(pose, conf, save_path = output_path)
                         
+    def hamer_to_pose(self, input_folder, output_folder, pose_type = 'pkl', multi_hands = False):
+        """
+        Iterate over all pose files in the input folder, preprocess them, and save them to the output folder.
+        """
+        import re
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+        
+        files = os.listdir(input_folder)
+        error = 0
+        if pose_type == 'pkl':
+            pkl_parser = PklParser(output_folder)
+            for filename in tqdm(files, desc="Processing files"):
+                if filename.endswith("."+ pose_type):
+                    
+                    input_path = os.path.join(input_folder, filename)
+                    output_path = os.path.join(output_folder, filename.replace(".pkl", ".pose"))
+
+                    if os.path.exists(output_path):
+                        continue
+                    
+                    pose, conf = pkl_parser.read_pkl(format = 'to_pose', input_path = input_path)
+                    if pose is not None:
+                        #pose, conf = self.pose_selector(pose), self.pose_selector(pose)
+                        
+                        filename_ = filename.replace(".pkl", "") 
+                        parts = filename_[:-2].split('-')
+                        # Check if the last part is a number using a regular expression
+                        if re.match(r'^\d+$', parts[-1]):
+                            # If the last part is a number, remove it
+                            filename_ = '-'.join(parts[:-1])
+                        filename_ += ".pose"
+
+                    
+                        pose_folder = '../signbank_videos'
+                        
+                        print(filename_)
+                        
+
+
+                        
+
+                        pose_path = os.path.join(pose_folder, filename_)
+                                 
+                        pose_loader = PoseFormatParser(pose_path)
+                        
+                        
+                        try:
+                            _, _ = pose_loader.read_pose()
+                        
+                            pose_loader.write_pose(pose, conf, save_path = output_path)
+                        except:
+                            error += 1
+                            print("Error in reading pose", error)
+                            continue
                         
