@@ -5,15 +5,49 @@ This repository contains code to process poses, with functionalities for automat
 ## Data Utilities 
 
 ### Metadata Preparations
-To prepare json files or txt files to train and evaluate models, rund module
+Configure parameters in **metadata_processor** script, run:
 
 ``` Prepare metadata
 python -m PoseTools.data.parsers_and_processors.metadata_processor
 ```
 
+### Pose Constructors and Format Converters 
+#### Hamer 3D-Handshape pose estimation
+Activate server environment 
+```
+/home/gomer/hamer/run_server.py
+source .hamer/bin/activate
+```
+Run Hamer Pose Estimator
+```
+data/parsers_and_processors/converters/vid_to_hamer.py
+```
 
-### PKL Files
+#### PoseFromat Mediapipe Full-body Pose Extraction 
+To perform pose extraction with mediapipe we use the [PoseFormat library](https://github.com/sign-language-processing/pose), which can be installed with pip
+``` 
+pip install pose-format
+```
 
+To convert a video to pose:
+``` 
+video_to_pose --format mediapipe -i example.mp4 -o example.pose
+# Or if you have a directory of videos
+videos_to_poses --format mediapipe --directory /path/to/videos
+```
+#### Pose Format Converters
+To convert between various pose formats used by different models
+```
+#  Pkl to Pose
+data/parsers_and_processors/converters/pkl_to_pose.py
+
+#  Pose to Pkl
+data/parsers_and_processors/converters/pose_to_pkl.py
+
+
+#  Hamer/json to Pkl
+data/parsers_and_processors/converters/hamer_to_pkl.py
+```
 
 
 
@@ -38,33 +72,6 @@ source .hamer/bin/activate
 ```
 
 
-### File Converters
-As the different mode
-
-## Additional Pose Tools
-## Metadata
-To prepare json files or txt files to train and evaluate models, rund module
-
-``` Prepare metadata
-python -m PoseTools.data.parsers_and_processors.metadata_processor
-```
-
-Variables and relevant paths are set on the top of the build_metadata script. 
-
-## Pose extraction 
-To perform pose extraction we use the [PoseFormat library](https://github.com/sign-language-processing/pose), which can be installed with pip
-``` 
-pip install pose-format
-```
-
-To convert a video to pose:
-``` 
-video_to_pose --format mediapipe -i example.mp4 -o example.pose
-# Or if you have a directory of videos
-videos_to_poses --format mediapipe --directory /path/to/videos
-```
-
-## Pose convertion 
 
 ## Segmentation
 TBI.
