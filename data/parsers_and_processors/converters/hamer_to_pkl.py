@@ -1,7 +1,7 @@
 from PoseTools.data.parsers_and_processors.datamanagment import FileConverters
 
-input_folder = "../../../../mnt/fishbowl/gomer/oline/hamer_large"
-output_folder = "../../../../mnt/fishbowl/gomer/oline/hamer_large_pkl"
+input_folder = "../../../../mnt/fishbowl/gomer/oline/hamer"
+output_folder = "../../../../mnt/fishbowl/gomer/oline/hamer_pkl"
 external_dict_file = None #'PoseTools/data/metadata/metadata_1_2s.json'
 dict_file = None #'PoseTools/data/metadata/output_2a.txt'#'PoseTools/results/handedness.txt'
 

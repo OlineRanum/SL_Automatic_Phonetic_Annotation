@@ -476,3 +476,21 @@ class TxtParser:
         return data
 
 
+class MetadataParser:
+    def __init__(self, file_path="A.hamer"):
+        self.file_path = file_path
+
+    def read_metadata(self):
+        """ Load the metadata from the json file """
+        with open(self.file_path, 'r') as file:
+            metadata = json.load(file)
+            
+        self.gloss_dict = []
+        for item in metadata:
+            # Append a list for each instance to self.gloss_dict
+            self.gloss_dict.extend(
+                [instance['video_id'], instance['split'], instance['source'],instance['Sign Type'], instance.get('Handshape', '-1')]
+                 for instance in item.get('instances', [])
+            )
+        
+        return self.gloss_dict
