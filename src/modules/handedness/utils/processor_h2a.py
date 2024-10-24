@@ -4,10 +4,10 @@ import pandas as pd
 import pickle
 import numpy as np
 
-from PoseTools.handedness.graphics import plot_hamer_hand_3d, plot_multiple_hands_from_dict
-from PoseTools.utils.parsers import PklParser
+from PoseTools.src.modules.handedness.graphics import plot_hamer_hand_3d, plot_multiple_hands_from_dict
+from PoseTools.data.parsers_and_processors.parsers import PklParser
 from collections import Counter
-from PoseTools.handedness.graphics import read_dict_from_txt
+from PoseTools.src.modules.handedness.graphics import read_dict_from_txt
 
 
 

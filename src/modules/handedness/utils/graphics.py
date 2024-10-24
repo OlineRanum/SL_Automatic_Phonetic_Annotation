@@ -157,7 +157,55 @@ def read_dict_from_txt(filename):
     return value_to_id
 
 
-def plot_multiple_hands_from_dict(node_positions_dict):
+def calculate_euclidean_distance(pose, reference_poses = None, gloss_mapping = None ):
+    """
+    Calculates the Euclidean distance between a pose and a reference pose for each keypoint.
+    
+    Parameters:
+    - pose: A numpy array of shape (21, 3), representing the pose for a frame.
+    - reference_pose: A numpy array of shape (21, 3), representing the reference handshape pose.
+    
+    Returns:
+    - The Euclidean distance between the pose and the reference pose.
+    """
+    distances = []
+    keys = []
+    for key, reference_pose in reference_poses.items():
+        distances.append(np.linalg.norm(pose - reference_pose, axis=1).mean())
+        keys.append(key)
+    closest_handshape = gloss_mapping[int(keys[np.argmin(np.array(distances))])]
+    return closest_handshape
+
+def calculate_top_n_closest_handshapes(pose, reference_poses = None, gloss_mapping = None,  n=3):
+    """
+    Calculates the Euclidean distance between a pose and each reference pose, and returns the top `n` closest handshapes.
+    
+    Parameters:
+    - pose: A numpy array of shape (21, 3), representing the pose for a frame.
+    - n: The number of closest handshapes to return.
+    
+    Returns:
+    - A list of the top `n` closest handshapes.
+    """
+    distances = []
+    keys = []
+    
+    # Calculate the Euclidean distance between the pose and each reference pose
+    for key, reference_pose in reference_poses.items():
+        distance = np.linalg.norm(pose - reference_pose, axis=1).mean()
+        distances.append(distance)
+        keys.append(key)
+
+    # Sort the distances and get the indices of the top `n` closest distances
+    sorted_indices = np.argsort(distances)[:n]
+    
+    # Retrieve the corresponding handshapes
+    top_n_handshapes = [gloss_mapping[int(keys[i])] for i in sorted_indices]
+    
+    return top_n_handshapes
+        
+
+def plot_multiple_hands_from_dict(node_positions_dict, output_path):
     """
     Plots multiple 3D hand graphs in a 5x7 grid using a dictionary of glosses and node positions.
     
@@ -165,17 +213,18 @@ def plot_multiple_hands_from_dict(node_positions_dict):
     - node_positions_dict: A dictionary where keys are integers (1-35) and values are numpy arrays of shape (21, 3).
     - gloss_mapping: A dictionary that maps integers (1-35) to glosses (strings).
     """
-    gloss_mapping = read_dict_from_txt('PoseTools/data/metadata/value_to_id.txt')
-    
+    gloss_mapping = read_dict_from_txt('/home/gomer/oline/PoseTools/data/metadata/output/global_value_to_id.txt')
+
     # Create a figure with a 5x7 grid of subplots
     fig = plt.figure(figsize=(15, 10))
+
     
     # Loop through each hand's node positions and gloss
     for i, (key, node_positions) in enumerate(node_positions_dict.items()):
         ax = fig.add_subplot(5, 7, i+1, projection='3d')
-        
+
         # Map the numeric ID to the corresponding gloss from gloss_mapping
-        gloss = gloss_mapping[i+1]
+        gloss = gloss_mapping.get(int(key), "Unknown Gloss")
         # Debugging: Print the gloss being used
         
         plot_hand_3d(ax, node_positions, gloss)
@@ -183,4 +232,4 @@ def plot_multiple_hands_from_dict(node_positions_dict):
     # Adjust layout to avoid overlap
     plt.tight_layout()
     
-    plt.savefig('PoseTools/handedness/graphics/reference_poses/multiple_hands_R.png')
+    plt.savefig(output_path)

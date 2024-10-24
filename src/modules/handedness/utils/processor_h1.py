@@ -1,14 +1,12 @@
 
-from PoseTools.utils.parsers import PoseFormatParser
 import numpy as np
 from tqdm import tqdm
 import os
-from PoseTools.utils.processors import MediaPipeProcessor
-from PoseTools.utils.parsers import TxtParser
-from PoseTools.handedness.utils.utils import calculate_center_of_mass, calculate_velocity, get_masked_arr, get_normalized_coord, extract_names_from_filtered_file
-from PoseTools.handedness.utils.graphics import plot_position, plot_velocity, plot_integrated_velocities
-
-
+from PoseTools.data.parsers_and_processors.parsers import PoseFormatParser, TxtParser
+from PoseTools.data.parsers_and_processors.processors import MediaPipeProcessor
+from PoseTools.src.modules.handedness.utils.utils import calculate_center_of_mass, calculate_velocity, get_masked_arr, get_normalized_coord, extract_names_from_filtered_file
+from PoseTools.src.modules.handedness.utils.graphics import plot_position, plot_velocity, plot_integrated_velocities
+import pandas as pd
 
 
 
@@ -54,14 +52,14 @@ def process_pose_file(pose_path, process_single_file = False):
     return integrated_r, integrated_l
 
 
-def detect_LR(filtered_pose_files):
+def detect_LR(filtered_pose_files, output_path):
     integrated_velocities = []
     handedness_records = []  # To store handedness results
 
     #frames = get_frames("../pose/segmentation/timestamps.txt")
     
     # Open the handedness.txt file for writing
-    with open("PoseTools/results/handedness.txt", "w") as handedness_file:
+    with open(output_path, "w") as handedness_file:
         i = 0
         l_hand = 0 
         
@@ -118,13 +116,8 @@ def get_glosses_with_handedness_1(data):
 
 def process_directory(directory_path, output_file, filtered_file_path, method = 'detect_LR'):
 
-    # Extract the list of names from the filtered file
-    filtered_names = extract_names_from_filtered_file(filtered_file_path)
-
     # Get a list of all .pose files in the directory that match the filtered names
     pose_files = [f[:-5] for f in os.listdir(directory_path) if f.endswith('.pose')]
-    
-    filtered_pose_files = [f for f in pose_files if f.split('.')[0].split('_')[-1] in filtered_names]
     
     if method == 'detect_LR':
         parser = TxtParser('PoseTools/data/metadata/glosses_meta.json')
@@ -136,23 +129,44 @@ def process_directory(directory_path, output_file, filtered_file_path, method = 
         filtered_pose_files = [f + '.pose' for f in pose_files if f in handedness_1]
         print('Number of files to process: ', len(filtered_pose_files))
 
-        integrated_velocities = detect_LR(filtered_pose_files)
+        integrated_velocities = detect_LR(filtered_pose_files, filtered_file_path)
         
         # Plot integrated velocities for all files
         plot_integrated_velocities(integrated_velocities, output_file)
 
-
+def process_directory_h1(df, pose_dir, output_dir):
+    # List all .pkl files in the pose_dir
+    filenames = set([file[:-6] for file in os.listdir(pose_dir) if file.endswith('.pkl')])
+    for filename in filenames:
+        # Construct full file path
+        filepath = os.path.join(pose_dir, filename)
+        filepath_L = filepath + '-L.pkl'
+        filepath_R = filepath +'-R.pkl' 
+        
+        # Load the .pkl file (assuming it's a pandas DataFrame)
+        with open(filepath_L, 'rb') as f:
+            hand_L = pd.read_pickle(f)['keypoints']
+        with open(filepath_L, 'rb') as f:
+            hand_R = pd.read_pickle(f)['keypoints']
+        
+        # Call detect_LR (make sure filtered_pose_files and filtered_file_path are defined)
+        integrated_velocities = detect_LR(hand_L, hand_R, file_path)
+        
+        # Save the result to the output directory
+        output_path = os.path.join(output_dir, filename)
+        with open(output_path, 'wb') as f_out:
+            pd.to_pickle(integrated_velocities, f_out)
 
 
 if __name__ == "__main__":
     # Load pose data
     import os 
     directory_path = "../signbank_videos/"  # Path to the directory containing .pose files
-    output_file = "PoseTools/handedness/graphics/integrated_velocity_barplot.png"  # Output file for the bar plot
-    filtered_file_path = "pose/metadata/filtered_output_reduced.txt"  # Metadata file for the dataset
+    output_file = "PoseTools/src/modules/handedness/graphics/integrated_velocity_barplot.png"  # Output file for the bar plot
+    filtered_file_path = "PoseTools/src/modules/handedness/model/h1s.txt"  # Metadata file for the dataset
 
-    pose_filename = "DEN-HAAG-B"
-    pose_path = os.path.join(directory_path, pose_filename + ".pose")
+    #pose_filename = "DEN-HAAG-B"
+    #pose_path = os.path.join(directory_path, pose_filename + ".pose")
     #process_pose_file(pose_path, process_single_file = True)
     
-    process_direcotory(directory_path, output_file, filtered_file_path)
+    process_directory(directory_path, output_file, filtered_file_path)
