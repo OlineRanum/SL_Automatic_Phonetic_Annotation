@@ -2,14 +2,35 @@
 
 This repository contains code to process poses, with functionalities for automatically annotating phonetic attributes of sign languages.
 
-## DataTypes
+## Data Utilities 
+
+### Metadata Preparations
+To prepare json files or txt files to train and evaluate models, rund module
+
+``` Prepare metadata
+python -m PoseTools.data.parsers_and_processors.metadata_processor
+```
+
+
 ### PKL Files
 
 
-### How to build reference poses 
+
+
+## Models
+### Euclidean Approach 
+#### How to construct reference poses from SignBank data
+
 ```
- python -m PoseTools.src.modules.handedness.utils.build_references
+ python -m PoseTools.src.modules.handshapes.utils.build_references
 ```
+
+
+### Euclidean Approach 
+
+
+### Euclidean Approach 
+ 
 ### Convert video to hamer
 ```
 /home/gomer/hamer/run_server.py
