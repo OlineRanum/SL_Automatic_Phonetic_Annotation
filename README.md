@@ -3,7 +3,7 @@ This repository contains code for processing pose data from sign language videos
 
 ## Table of Contents
 - [Installation](#installation)
-- [Usage](#usage)
+- [Data Utilities](#data-utilities)
 - [File Structure](#file-structure)
 - [Example](#example)
 - [Contributing](#contributing)
@@ -31,7 +31,7 @@ This repository contains code to process poses, with functionalities for automat
 ### Metadata Preparations
 To prepare the metadata, configure the parameters in the metadata_processor script and run:
 
- Prepare metadata
+```
 python -m PoseTools.data.parsers_and_processors.metadata_processor
 ```
 
