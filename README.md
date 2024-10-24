@@ -44,7 +44,7 @@ source .hamer/bin/activate
 ```
 2. Run Hamer Pose Estimator
 ```
-data/parsers_and_processors/converters/vid_to_hamer.py
+python -m data.parsers_and_processors.converters.vid_to_hamer
 ```
 
 #### PoseFromat Mediapipe Full-body Pose Extraction 
@@ -64,13 +64,13 @@ videos_to_poses --format mediapipe --directory /path/to/videos
 To convert between various pose formats used by different models
 ```
 #  Pkl to Pose
-python -m data/parsers_and_processors/converters/pkl_to_pose
+python -m data.parsers_and_processors.converters.pkl_to_pose
 
 #  Pose to Pkl
-python -m data/parsers_and_processors/converters/pose_to_pkl
+python -m data.parsers_and_processors.converters.pose_to_pkl
 
 #  Hamer/json to Pkl
-python -m data/parsers_and_processors/converters/hamer_to_pkl
+python -m data.parsers_and_processors.converters.hamer_to_pkl
 ```
 
 
@@ -82,7 +82,7 @@ python -m data/parsers_and_processors/converters/hamer_to_pkl
 ```
 ** Inference Directory with GIF**:
 ```
-python -m src/modules/handshapes/engines/ed_algorithm/inference_with_gif
+python -m src.modules.handshapes.engines.ed_algorithm.inference_with_gif
 ```
 
 #### How to construct reference poses from SignBank data
