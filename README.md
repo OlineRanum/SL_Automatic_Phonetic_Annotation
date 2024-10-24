@@ -1,8 +1,26 @@
 # PoseTools
 
-This repository contains code to process poses, with functionalities for automatically annotating phonetic attributes of sign languages
+This repository contains code to process poses, with functionalities for automatically annotating phonetic attributes of sign languages.
+
+## DataTypes
+### PKL Files
 
 
+### How to build reference poses 
+```
+ python -m PoseTools.src.modules.handedness.utils.build_references
+```
+### Convert video to hamer
+```
+/home/gomer/hamer/run_server.py
+source .hamer/bin/activate
+```
+
+
+### File Converters
+As the different mode
+
+## Additional Pose Tools
 ## Metadata
 To prepare json files or txt files to train and evaluate models, rund module
 
@@ -31,16 +49,16 @@ videos_to_poses --format mediapipe --directory /path/to/videos
 TBI.
 
 ## Handedness 
-### Evaluate number of signing hands
+### Evaluate number of active hands
 To evaluate wheter one or two hands are signing 
 
 ``` Train NHands model 
-python -m PoseTools.src.models.slgcn.train_slgcn --config handedness.yaml
+python -m PoseTools.src.models.slgcn.train_slgcn --config nhands.yaml
 ```
 
 ``` Evaluate NHands model 
 # Evaluate test set
-python -m PoseTools.src.models.slgcn.test_slgcn
+python -m PoseTools.src.models.slgcn.test_slgcn --config test_nhands.yaml
 
 # Evaluate single video
 python -m PoseTools.src.models.slgcn.eval_slgcn --input_path path/to/video/video.pkl
@@ -50,7 +68,8 @@ python -m PoseTools.src.models.slgcn.eval_slgcn --input_path path/to/video/video
 
 | Model | Checkpoints   | Classes | Train/Val/Test | a1   | a2   | rr   |
 |-------|---------------|---------|----------------|------|------|------|
-| SLGCN | nhands.ckpt    | 2       | 3739/376/382     | 0.95 | 1.00 | 0.97 |
+| SLGCN | nhands_small.ckpt    | 2       | 3739/376/382     | 0.95 | 1.00 | 0.97 |
+| SLGCN | nhands_large.ckpt    | 2       | 9983/2018/-     |  |  |  |
 
 ### Something
 
