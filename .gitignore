@@ -5,6 +5,10 @@ data/metadata/json_files/
 data/metadata/output/
 data/metadata/txt_files/
 
+src/models/graphTransformer/test_data
+src/models/graphTransformer/trained_models
+src/models/temporal_ponita
+trained_models/
 
 ## Graphics
 handedness/graphics/reference_poses/
