@@ -19,7 +19,7 @@ def plot_velocity(velocity_r, velocity_l, pose_filename):
     plt.title("Velocity Profile of Both Hands")
     plt.legend()
     plt.grid(True)
-    plt.savefig('PoseTools/handedness/graphics/velocity_'+pose_filename+'.png')
+    plt.savefig('graphics/velocity_'+pose_filename+'.png')
 
 
 def plot_integrated_velocities(integrated_velocities, output_file):
@@ -61,7 +61,8 @@ def plot_position(pos_r, pos_l, pose_filename):
     plt.title("Position Profile of Both Hands")
     plt.legend()
     plt.grid(True)
-    plt.savefig('PoseTools/handedness/graphics/position_'+pose_filename+'.png')
+    plt.savefig('graphics/position_'+pose_filename+'.png')
+    plt.close()
 
 
 def plot_hamer_hand_3d(node_positions, output_file_name):
@@ -80,28 +81,38 @@ def plot_hamer_hand_3d(node_positions, output_file_name):
         (0, 17), (17, 18), (18, 19), (19, 20)  # Pinky Finger
     ]
     
-    # Create a 3D plot
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+    # Create a 2x2 grid for subplots
+    fig = plt.figure(figsize=(12, 12))
+    angles = [[0,0],[5, 45],[45, 0],[45, 45]]
 
-    # Plot the nodes
-    ax.scatter(node_positions[:, 0], node_positions[:, 1], node_positions[:, 2], color='b', s=100)
+    fig.suptitle(f"3D Handshape Visualization for Gloss: {output_file_name}", fontsize=16)
+    
+    for i, angle in enumerate(angles):
+        ax = fig.add_subplot(2, 2, i + 1, projection='3d')
+        
+        # Plot the nodes
+        ax.scatter(node_positions[:, 0], node_positions[:, 1], node_positions[:, 2], color='b', s=100)
+        
+        # Plot the edges (connections)
+        for connection in connections:
+            start, end = connection
+            xs = [node_positions[start, 0], node_positions[end, 0]]
+            ys = [node_positions[start, 1], node_positions[end, 1]]
+            zs = [node_positions[start, 2], node_positions[end, 2]]
+            ax.plot(xs, ys, zs, color='r', linewidth=2)
 
-    # Plot the edges (connections)
-    for connection in connections:
-        start, end = connection
-        xs = [node_positions[start, 0], node_positions[end, 0]]
-        ys = [node_positions[start, 1], node_positions[end, 1]]
-        zs = [node_positions[start, 2], node_positions[end, 2]]
-        ax.plot(xs, ys, zs, color='r', linewidth=2)
+        # Set labels and viewing angle
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        ax.view_init(elev=angle[0], azim=angle[1])
+        
+        ax.set_title(f"View angle: {angle}°")
 
-    # Set labels
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-
-    # Show the plot
-    plt.savefig('PoseTools/handedness/graphics/reference_poses/'+ output_file_name+'.png')
+    # Save the plot as a single image
+    plt.tight_layout()
+    plt.savefig(f'PoseTools/src/modules/handshapes/utils/reference_poses/{output_file_name}.png')
+    plt.show()
 
 
 def plot_hand_3d(ax, node_positions, gloss):
@@ -121,7 +132,7 @@ def plot_hand_3d(ax, node_positions, gloss):
         (0, 13), (13, 14), (14, 15), (15, 16),  # Ring Finger
         (0, 17), (17, 18), (18, 19), (19, 20)  # Pinky Finger
     ]
-    
+    node_positions = node_positions[0]
     # Plot the nodes
     ax.scatter(node_positions[:, 0], node_positions[:, 1], node_positions[:, 2], color='b', s=20)
 
@@ -221,13 +232,17 @@ def plot_multiple_hands_from_dict(node_positions_dict, output_path):
     
     # Loop through each hand's node positions and gloss
     for i, (key, node_positions) in enumerate(node_positions_dict.items()):
+        if i > 35: break
+        print(i, key)
+        print(len(node_positions_dict.keys()))
         ax = fig.add_subplot(5, 7, i+1, projection='3d')
 
         # Map the numeric ID to the corresponding gloss from gloss_mapping
-        gloss = gloss_mapping.get(int(key), "Unknown Gloss")
+        gloss = key # gloss_mapping.get(int(key), "Unknown Gloss")
         # Debugging: Print the gloss being used
         
         plot_hand_3d(ax, node_positions, gloss)
+        
     
     # Adjust layout to avoid overlap
     plt.tight_layout()
