@@ -281,9 +281,11 @@ class EvaluatePoses:
                 video_id_R = os.path.join(self.pose_dir, video_id + '-R.pkl')
 
                 if handedness == '1':
-                    h1_key = str(self.get_key_from_value(h1))
+                    h1_key = h1
+                    print(h1)
                     reference_pose_h1 = self.reference_poses[h1_key]
-                    
+                    print(reference_pose_h1[0].shape)
+                    exit()
                     distance_L = self.get_distance(video_id_L, reference_pose_h1)
                     distance_R = self.get_distance(video_id_R, reference_pose_h1)
                             
@@ -443,28 +445,39 @@ if __name__ == "__main__":
     # Load pose data
     # Example usage:
 
-    json_file_path = 'PoseTools/data/metadata/output/all/ac_metadata.json'
+    json_file_path = 'PoseTools/data/metadata/output/31c/31c_SB_all.json'
     df = json_to_dataframe(json_file_path)
     
     # Assuming 'df' is the DataFrame you want to split
     df_1, df_2s, df_2a = split_dataframe_by_handedness(df)
     
 
-    combined_df = get_1h_2s_references(df_1, df_2s, 'PoseTools/data/datasets/hamer_1_2s_2a/normalized')
+    #combined_df = get_1h_2s_references(df_1, df_2s, 'PoseTools/data/datasets/hamer_1_2s_2a/normalized')
 
 
     # Example usage
-    poseconstructor = BuildReferencePose()
-    reference_poses = poseconstructor.build_reference_pose(combined_df)
-    print(reference_poses)
-    import pickle
+    #poseconstructor = BuildReferencePose()
+    #reference_poses = poseconstructor.build_reference_pose(combined_df)
+    #print(reference_poses)
+    #import pickle
     # Save the object to a file
-    with open('reference_poses.pkl', 'wb') as file:
-        pickle.dump(reference_poses, file)
-    exit()
-    plot_multiple_hands_from_dict(reference_poses)
-    exit()
+    #with open('reference_poses.pkl', 'wb') as file:
+    #    pickle.dump(reference_poses, file)
+    
+    #plot_multiple_hands_from_dict(reference_poses)
+    reference_pose_path = '/home/gomer/oline/PoseTools/src/modules/handshapes/utils/references/reference_poses_pdm_extended_uva.pkl'
+    reference_pose_path_sb = '/home/gomer/oline/PoseTools/src/modules/handshapes/utils/references/reference_poses_pdm_extended_pluss.pkl'
+    gloss_mapping = read_dict_from_txt('/home/gomer/oline/PoseTools/data/metadata/output/global_value_to_id.txt')
+    # Load reference poses
+    with open(reference_pose_path, 'rb') as file:
+        reference_poses = pickle.load(file)
 
+    with open(reference_pose_path_sb, 'rb') as file:
+        reference_poses_sb = pickle.load(file)
+    
+    reference_poses['5r'] = reference_poses_sb['5r']
+    print(f"Reference poses loaded: {list(reference_poses.keys())}")
+    
     # Create an instance of the class
     evaluator = EvaluatePoses(df, reference_poses)
 
