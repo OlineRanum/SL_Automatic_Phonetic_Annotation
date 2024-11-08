@@ -3,7 +3,7 @@ import argparse
 import pickle
 import os
 from torch_geometric.data import Data
-from PoseTools.src.models.graphTransformer.gt import HandshapeGAT
+from PoseTools.src.models.gca.gt import HandshapeGAT
 import matplotlib.pyplot as plt
 import numpy as np
 import imageio
@@ -11,7 +11,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from PoseTools.src.modules.handedness.utils.graphics import read_dict_from_txt
 
 
-with open('/home/gomer/oline/PoseTools/src/modules/handedness/utils/references/reference_poses_it5.pkl', 'rb') as file:
+with open('/home/gomer/oline/PoseTools/src/modules/handshapes/utils/references/reference_poses.pkl', 'rb') as file:
     reference_poses = pickle.load(file)
 
 # List of keys to keep
@@ -19,7 +19,7 @@ keys_to_keep = ['1', '2', '3', '4', '9', '12', '17', '18','19', '22', '23', '25'
 #['2', '3', '4', '17', '18']
 
 # Create a new dictionary with only the specified keys
-reference_poses = {key: reference_poses[key] for key in keys_to_keep if key in reference_poses}
+reference_poses = {key: reference_poses[key] for key in reference_poses}
 
 gloss_mapping = read_dict_from_txt('/home/gomer/oline/PoseTools/data/metadata/output/global_value_to_id.txt')
 
@@ -131,7 +131,7 @@ def predict_and_plot_handshape(data_list, keypoints, output_gif_path, filename):
     most_common_prediction = max(set(predictions), key=predictions.count)
     return most_common_prediction
 
-def process_directory(input_folder,  device):
+def process_directory(input_folder, output_folder,  device):
     """
     Process all files in the directory, perform inference on each, and print or save the predicted handshape label.
     """
@@ -152,7 +152,7 @@ def process_directory(input_folder,  device):
             pose_data = preprocess_pose(pose)
 
             # Perform inference and create GIF
-            output_gif_path = os.path.join(input_folder, f"gif_euclid/{os.path.splitext(filename)[0]}_output.gif")
+            output_gif_path = os.path.join(output_folder,  f"{os.path.splitext(filename)[0]}_output.gif")
             
             predicted_class = predict_and_plot_handshape( pose_data, pose, output_gif_path, filename[:-4])
 
@@ -165,11 +165,13 @@ def main(args):
     
 
     # Process all .pkl files in the specified directory
-    process_directory(args.input_folder, device)
+    process_directory(args.input_folder, args.output_folder,  device)
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_folder', default='/home/gomer/oline/PoseTools/src/models/graphTransformer/test_data/vids/norm/pkl/', 
+                        type=str, help='Directory containing .pkl pose data files')
+    parser.add_argument('--output_folder', default='/home/gomer/oline/PoseTools/data/datasets/test_data/gifs/', 
                         type=str, help='Directory containing .pkl pose data files')
 
     args = parser.parse_args()
