@@ -96,3 +96,29 @@ if __name__ == "__main__":
 
     # Plot keypoints with edges for the first frame (frame 0)
     plot_keypoints_with_edges(keypoints, edges, frame_idx=20)
+
+
+
+
+def plot_cm(true_labels, pred_labels, save_path = '/home/gomer/oline/PoseTools/src/modules/handshapes/utils/confusion_matrix.png'):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    from sklearn.metrics import confusion_matrix
+    import numpy as np
+    # Generate confusion matrix
+    # Extract unique labels from both lists
+    unique_labels = sorted(set(true_labels) | set(pred_labels))
+
+    # Generate confusion matrix with all unique labels
+    conf_matrix = confusion_matrix(true_labels, pred_labels, labels=unique_labels)
+
+    # Plot confusion matrix as a heatmap
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', cbar=False,
+                xticklabels=unique_labels, yticklabels=unique_labels)
+
+
+    plt.xlabel("Predicted Labels")
+    plt.ylabel("Actual Labels")
+    plt.title("Confusion Matrix")
+    plt.savefig(save_path)
