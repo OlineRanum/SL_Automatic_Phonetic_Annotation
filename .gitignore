@@ -10,6 +10,13 @@ src/models/graphTransformer/trained_models
 src/models/temporal_ponita
 trained_models/
 
+
+*.mp4
+*.hamer
+*.pkl
+*.pose
+*.png
+
 ## Graphics
 handedness/graphics/reference_poses/
 handedness/graphics/velocity_profiles/
@@ -18,7 +25,7 @@ handedness/graphics/velocity_profiles/
 ## Results
 results/
 src/modules/features/figures/
-
+src/modules/handshapes/utils/clusters/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

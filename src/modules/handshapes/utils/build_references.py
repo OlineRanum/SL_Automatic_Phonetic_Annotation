@@ -358,8 +358,6 @@ if __name__ == "__main__":
         # Update the predefined poses for the next iteration
         predefined_poses = reference_pdms
 
-
-        # Save the reference poses from the last iteration
         if i == num_iterations:
             output_path = f'/home/gomer/oline/PoseTools/src/modules/handshapes/utils/references/iteration_{i}_pdm_uva.png'
             
