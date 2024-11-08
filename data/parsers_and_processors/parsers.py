@@ -126,11 +126,9 @@ class PklParser:
                 'keypoints': data,
                 'confidences': conf
             }
-            print(data)
             # Save the dictionary to a pickle file
             with open(self.output_path, 'wb') as file:
                 pickle.dump(data_dict, file)
-            print(self.output_path)
             
             #print(f"Data successfully saved to {self.output_path}")
         else:
@@ -241,15 +239,18 @@ class HamerParser:
 
         # Create the output filepath for the .pkl file
         output_filename = os.path.splitext(filename)[0] 
-        if "normalized_" in output_filename:
-            output_filename = output_filename.split('_', 1)[1]
-        if "_segment" in filename:
-            output_filename = output_filename.split('_', 1)[0]
-        if '.' in filename:
-            output_filename = output_filename.replace('.', '-')
+        #if "normalized_" in output_filename:
+        #    output_filename = output_filename.split('_', 1)[1]
+        #if "_segment" in filename:
+        #    output_filename = output_filename.split('_', 1)[0]
+        #if '.' in filename:
+        #    output_filename = output_filename.replace('.', '-')
         output_filename = output_filename + f"-{handedness}"
+        
         if ".pkl" not in output_filename:
             output_filename = output_filename + ".pkl"
+        print('-------------')
+        print(output_filename)
         
         output_filepath = os.path.join(self.destination_dir, output_filename)
 
@@ -313,6 +314,8 @@ class HamerParser:
                         
                         self.process_hamer_file(filepath, filename, 'R')
                         total += 1
+                print('Filepath removed', filepath)
+                os.remove(filepath)    
             
         print('Total number of processed files', total)
         print('Percentage of left handed signs', left/total)
@@ -334,19 +337,24 @@ class HamerParser:
         
         for filename in tqdm(files, desc="Converting files"):
             if filename.endswith("." + pose_type):
+                print(filename)
                 
                 filepath = os.path.join(self.source_dir, filename)
                 
                 gloss = filename[:-(len(pose_type) + 1)]
                 
-                if "normalized_" in gloss:
-                    gloss = gloss.split('_', 1)[1]
-                if "_segment" in gloss:
-                    gloss = gloss.split('_', 1)[0]
+                #if "normalized_" in gloss:
+                #    gloss = gloss.split('_', 1)[1]
+                #if "_segment" in gloss:
+                #    gloss = gloss.split('_', 1)[0]
                 
                         
                 self.process_hamer_file(filepath, filename, 'L')    
                 self.process_hamer_file(filepath, filename, 'R')
+
+                print('Filepath removed', filepath)
+                #filepath = os.path.join(self.destination_dir, 'normalized_'+filename[:-12] + '.hamer')
+                #os.remove(filepath)
     
 
     def hamer_to_pkl_2a(self, pose_type, dict_file, external_dict_file = None, convert2a = True):
@@ -479,14 +487,16 @@ class TxtParser:
 class MetadataParser:
     def __init__(self, file_path="A.hamer"):
         self.file_path = file_path
+        self.gloss_dict = []
 
-    def read_metadata(self):
+    def read_metadata_json(self):
         """ Load the metadata from the json file """
         with open(self.file_path, 'r') as file:
             metadata = json.load(file)
             
-        self.gloss_dict = []
+        
         for item in metadata:
+            print(item)
             # Append a list for each instance to self.gloss_dict
             self.gloss_dict.extend(
                 [instance['video_id'], instance['split'], instance['source'],instance['Sign Type'], instance.get('Handshape', '-1')]
@@ -494,3 +504,55 @@ class MetadataParser:
             )
         
         return self.gloss_dict
+    
+    def read_metadata(self):
+        """Load the metadata from the JSON file and parse gloss data."""
+        
+        from pathlib import Path
+        import pandas as pd
+        gloss_dict = []
+        
+        # Check if the file exists before attempting to open it
+        file_path = Path(self.file_path)
+        if not file_path.exists():
+            print(f"File {self.file_path} not found.")
+            return gloss_dict
+
+        # Load metadata from JSON file
+        with open(self.file_path, 'r') as file:
+            try:
+                metadata = json.load(file)
+            except json.JSONDecodeError:
+                print("Failed to decode JSON. Please check the file format.")
+                return gloss_dict
+
+        # Iterate through the metadata list (since metadata is a list of dictionaries)
+        for item in metadata:
+            # Each item should be a dictionary with a single gloss ID as the key
+            for gloss_id, details in item.items():
+                # Extract relevant fields
+                affiliation = details.get('Affiliation')
+
+                gloss_dict.append([
+                    gloss_id,
+                    details.get('Annotation ID Gloss: Dutch', -1),
+                    details.get('Annotation ID Gloss: English', -1),
+                    details.get('Handedness', -1),
+                    details.get('Strong Hand', -1),
+                    details.get('Weak Hand', -1),
+                    details.get('Affiliation', -1)
+                ])
+
+                # Convert the list of dictionaries to a DataFrame
+                # Convert the list of lists to a DataFrame with specified column names
+        gloss_df = pd.DataFrame(gloss_dict, columns=[
+            'Gloss ID', 
+            'Annotation ID Gloss: Dutch', 
+            'Annotation ID Gloss: English', 
+            'Handedness', 
+            'Strong Hand', 
+            'Weak Hand', 
+            'Affiliation'
+        ])
+        
+        return gloss_df

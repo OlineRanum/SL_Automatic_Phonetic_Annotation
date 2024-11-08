@@ -70,13 +70,13 @@ class HamerProcessor:
     def temporal_segmentation(self, hand, start_frame, end_frame):    
         return hand[start_frame:end_frame]
     
-    def clean_hamer_list(self, hand):
+    def clean_hamer_list(self, hand, json = False):
         ''' As the hamer data contains empty frames, this function filters out the empty frames and returns the hand data in a cleaned format.
         This format has a regular shape and can be converted to a numpy array
         '''
         
         filtered_hand_data = []
-        json = True
+        
         if json:
             for i in hand:
                 if len(i) != 0:
@@ -87,7 +87,6 @@ class HamerProcessor:
                     for j in i:
                         filtered_hand_data.append(j)
         
-        #print(filtered_hand_data)
         filtered_hand_data = np.array(filtered_hand_data)
         
         return filtered_hand_data
@@ -110,6 +109,7 @@ class HamerProcessor:
             processed_hand = np.array(hand)
             
         except:
+            print(handedness)
             processed_hand = self.clean_hamer_list(hand)
             
             if processed_hand.shape == (0,) or processed_hand.ndim == 2:

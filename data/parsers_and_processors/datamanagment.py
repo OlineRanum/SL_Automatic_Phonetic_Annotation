@@ -74,7 +74,7 @@ class FileConverters:
                     
                     pose = self.preprocess_pose(pose)
                     conf = self.preprocess_pose(conf)
-                    print(pose.shape, conf.shape)
+                    
                     
                     base, ext = os.path.splitext(filename)
                     base = base.replace(".", "-")
@@ -85,7 +85,6 @@ class FileConverters:
             
         if pose_type == 'hamer' or pose_type == 'json':
             hamer_parser = HamerParser(input_folder, output_folder)
-            print(input_folder, output_folder)
             
             if multi_hands:
                 print("Multi-handedness classes")
