@@ -14,14 +14,16 @@ import sys
 number_handshape_classes = 50
 handedness_classes = ['1', '2s', '2a']
 no_handshapechanges = True
+preselected_handshapes =  ['C_spread', '5', 'S', 'B', 'C', 'Horns', 'Money', '1', '1_curved', 'K', 'V_curved', 'T', '5_claw', 'A', 'Baby_beak', 'Beak', 'M', 'L2', 'Baby_C', '5m_closed', 'D', '4', 'O', 'Beak_open', 'I', 'Y', 'N', '5r', 'L', 'V', 'W']
+affiliation_filter = False
 
 property = 'Strong Hand'  # Alternative: 'Strong Hand', 'Handedness'
-output_folder = '50c'
-output_filename = '50c_uva'
+output_folder = '31c'
+output_filename = '31c_SB_all'
 finegrained_handedness = False
 
 use_extention = False
-num_instances = 1000
+num_instances = 1000000000
 num_test = 1 #int(num_instances/10/number_handshape_classes)  # Number of test samples per class
 print('Number of test samples per class:', num_test)
 num_validation = 1#  num_test# num_test  # Number of validation samples per class
@@ -30,19 +32,19 @@ num_validation = 1#  num_test# num_test  # Number of validation samples per clas
 # Paths
 ###############################################
 json_file_path = 'PoseTools/data/metadata/glosses_meta.json'
-h1_file_path = 'PoseTools/results/handedness/hamer_pkl/handedness_1.txt'
-h2s_file_path = 'PoseTools/results/handedness/hamer_pkl/handedness_2s.txt'
-h2a_file_path = 'PoseTools/results/handedness/hamer_pkl/handedness_2a.txt'
+#h1_file_path = 'PoseTools/results/handedness/hamer_pkl/handedness_1.txt'
+#h2s_file_path = 'PoseTools/results/handedness/hamer_pkl/handedness_2s.txt'
+#h2a_file_path = 'PoseTools/results/handedness/hamer_pkl/handedness_2a.txt'
 
 package_path = os.path.abspath('../')  # Adjust this path as needed
 txt_file_path = 'PoseTools/data/metadata/txt_files/metadata_test.txt'
 video_ids_file = 'PoseTools/data/metadata/corrupted.txt'
 output_json = 'PoseTools/data/metadata/output/'+output_folder+'/'+output_filename+'.json'
-value_to_id_file = 'PoseTools/data/metadata/output/'+output_folder+'/value_to_id.txt'
+value_to_id_file = '/home/gomer/oline/PoseTools/data/metadata/output/global_value_to_id.txt'
 
 normalized_subdirectory = None #'../signbank_videos/segmented_videos/output'
 segmented_subdirectory =None #'../signbank_videos/segmented_videos'
-pkl_subdirectory = '/mnt/fishbowl/gomer/oline/sb_uva/hamer_pkl' # 'PoseTools/data/datasets/hamer_1_2s_2a/normalized'
+pkl_subdirectory = '/mnt/fishbowl/gomer/oline/hamer_pkl' # 'PoseTools/data/datasets/hamer_1_2s_2a/normalized'
 pose_subdirectory = None #'/mnt/fishbowl/gomer/oline/hamer_pose' # 'PoseTools/data/datasets/hamer_1_2s_2a/normalized'
 
 split_files = {
@@ -56,6 +58,26 @@ split_files = {
 if not os.path.exists('PoseTools/data/metadata/output/'+output_folder):
     # Create the directory if it does not exist
     os.makedirs('PoseTools/data/metadata/output/'+output_folder)
+
+
+def read_dict_from_txt(filename):
+    """
+    Reads a dictionary from a .txt file where each line is in the format 'key: value'.
+    
+    Parameters:
+    - filename: The name of the input file.
+    
+    Returns:
+    - A dictionary with the key-value pairs from the file.
+    """
+    value_to_id = {}
+    with open(filename, 'r') as f:
+        for line in f:
+            key, value = line.strip().split(': ')
+            value_to_id[int(value)] = key  # Store with value as the key and key as the value
+    return value_to_id
+
+gloss_mapping = read_dict_from_txt(value_to_id_file)
 
 # ----------------------------------------------
 # Set up package path for PoseTools
@@ -81,8 +103,14 @@ def json_to_dataframe(data):
             flattened_data.append(flat_entry)
     return pd.DataFrame(flattened_data)
 
+
+# Load Metadata 
 data = load_json(json_file_path)
 df_meta = json_to_dataframe(data)
+
+uva_list  = [f[:-6] for f in os.listdir(pkl_subdirectory) if os.path.isfile(os.path.join(pkl_subdirectory, f))]
+df_meta = df_meta[df_meta['Annotation ID Gloss: Dutch'].isin(uva_list)]
+
 import ast 
 # Ensure 'Affiliation' values are lists
 df_meta['Affiliation'] = df_meta['Affiliation'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
@@ -94,9 +122,12 @@ df_meta = df_meta[df_meta['Affiliation'].astype(bool)]
 affiliation_counts = df_meta['Affiliation'].apply(tuple).value_counts()
 
 # Filter for rows with Affiliation exactly ['UvA']
-df_meta = df_meta[df_meta['Affiliation'].apply(lambda x: x == ['UvA'])]
-print(df_meta['Affiliation'].value_counts())
-print(len(df_meta['Strong Hand'].value_counts()))
+
+if affiliation_filter:
+    df_meta = df_meta[df_meta['Affiliation'].apply(lambda x: x == ['UvA'])]
+    print(df_meta['Affiliation'].value_counts())
+    print(len(df_meta['Strong Hand'].value_counts()))
+
 # ----------------------------------------------
 # Add Handedness RL Label
 ###############################################
@@ -117,122 +148,115 @@ def process_annotation(annotation):
         source = 'SB'
     return annotation_id_gloss, source
 
-def read_txt_to_df(file_path):
-    # List of column names
-    columns = ['Gloss ID', 'Lemma ID Gloss: Dutch', 'Annotation ID Gloss: Dutch',
-            'Annotation ID Gloss: English', 'Senses: Dutch',
-            'Annotation Instructions', 'Handedness', 'Strong Hand',
-            'Strong Hand Letter', 'In The Web Dictionary',
-            'Is This A Proposed New Sign?', 'Exclude From Ecv', 'Repeated Movement',
-            'Alternating Movement', 'Link', 'Video', 'Affiliation',
-            'Senses: English', 'Weak Hand', 'Relative Orientation: Movement',
-            'Movement Direction', 'Tags', 'Movement Shape', 'Orientation Change',
-            'Location', 'Lemma ID Gloss: English', 'Virtual Object',
-            'Relative Orientation: Location', 'Strong Hand Number',
-            'Handshape Change', 'Weak Hand Number', 'Phonetic Variation', 'Notes',
-            'Contact Type', 'Sequential Morphology', 'Semantic Field', 'Word Class',
-            'Weak Drop', 'Relation Between Articulators', 'Phonology Other',
-            'Iconic Image', 'Named Entity', 'Weak Prop', 'Mouth Gesture',
-            'Weak Hand Letter', 'Simultaneous Morphology', 'NME Videos',
-            'Concepticon Concept Set', 'Blend Morphology', 'Mouthing', 'LR_value', 'letter_id', 'source']
+def read_df_meta_to_df(df_meta):
+    """
+    Processes the metadata DataFrame to create a new DataFrame with specified columns,
+    appending suffixes 'L' and 'R' to the 'Annotation ID Gloss: Dutch' field for each row.
 
-    # Create a list to store the rows
+    Parameters:
+    - df_meta (pd.DataFrame): The metadata DataFrame containing necessary fields.
+
+    Returns:
+    - pd.DataFrame: The processed DataFrame with expanded rows and specified columns.
+    """
+    # Define the list of column names
+    columns = [
+        'Gloss ID', 'Lemma ID Gloss: Dutch', 'Annotation ID Gloss: Dutch',
+        'Annotation ID Gloss: English', 'Senses: Dutch',
+        'Annotation Instructions', 'Handedness', 'Strong Hand',
+        'Strong Hand Letter', 'In The Web Dictionary',
+        'Is This A Proposed New Sign?', 'Exclude From Ecv', 'Repeated Movement',
+        'Alternating Movement', 'Link', 'Video', 'Affiliation',
+        'Senses: English', 'Weak Hand', 'Relative Orientation: Movement',
+        'Movement Direction', 'Tags', 'Movement Shape', 'Orientation Change',
+        'Location', 'Lemma ID Gloss: English', 'Virtual Object',
+        'Relative Orientation: Location', 'Strong Hand Number',
+        'Handshape Change', 'Weak Hand Number', 'Phonetic Variation', 'Notes',
+        'Contact Type', 'Sequential Morphology', 'Semantic Field', 'Word Class',
+        'Weak Drop', 'Relation Between Articulators', 'Phonology Other',
+        'Iconic Image', 'Named Entity', 'Weak Prop', 'Mouth Gesture',
+        'Weak Hand Letter', 'Simultaneous Morphology', 'NME Videos',
+        'Concepticon Concept Set', 'Blend Morphology', 'Mouthing',
+        'LR_value', 'letter_id', 'source'
+    ]
+
+    # Initialize a list to store each row of data
     rows = []
 
-    # Open the file and read it line by line
-    with open(file_path, 'r') as file:
-        total_lines = sum(1 for _ in open(file_path))  # Get total lines for tqdm
-        for line in tqdm(file, total=total_lines, desc="Processing lines"):
-            # Assuming the line has exactly 5 values separated by commas
-            handedness, annotation, hand_ID, strong_hand, LR_value = line.strip().split(',')
-            handedness = handedness.strip()
-            annotation = annotation.strip()
-            hand_ID = hand_ID.strip()
-            strong_hand = strong_hand.strip()
-            LR_value = LR_value.strip()
-            annotation_id_gloss, source = process_annotation(annotation)
-            # Look up the metadata using the preprocessed dictionary
-            
-            metadata_row = df_meta[df_meta['Annotation ID Gloss: Dutch'].str.strip() == annotation_id_gloss]
-
-            if metadata_row.empty:
-                #print(f"Warning: No match found for {annotation_id_gloss} in metadata!")
-                continue
-            else:
-                # Extract the first (and expected only) row as a dictionary
-                metadata_values = metadata_row.iloc[0].to_dict()
-
-            # Create a new row, using metadata if available
+    # Iterate over each row in df_meta
+    for index, row in df_meta.iterrows():
+        for suffix in ['L', 'R']:
+            # Create a new row dictionary
             new_row = {
-                'Handedness': handedness,
-                'Annotation ID Gloss: Dutch': annotation + '-' + LR_value,
-                'letter_id': hand_ID,
-                'gloss': hand_ID,
-                'LR_value': LR_value,
-                'Strong Hand': strong_hand,
-                'source': source,
+                'Handedness': row.get('Handedness', None),
+                'Annotation ID Gloss: Dutch': f"{row.get('Annotation ID Gloss: Dutch', '').strip()}-{suffix}",
+                'gloss': row.get('Strong Hand', None),
+                'letter_id': row.get('Strong Hand', None),
+                'LR_value': suffix,
+                'Strong Hand': row.get('Strong Hand', None),
+                'source': 'SB',  # As per your requirement
                 # Copy relevant metadata fields if they exist
-                'Gloss ID': metadata_values.get('Gloss ID', None),
-                'Annotation ID Gloss: English': metadata_values.get('Annotation ID Gloss: English', None),
-                'Lemma ID Gloss: Dutch': metadata_values.get('Lemma ID Gloss: Dutch', None),
-                #'Senses: Dutch': metadata_values.get('Senses: Dutch', None),
-                #'Annotation Instructions': metadata_values.get('Annotation Instructions', None),
-                #'In The Web Dictionary': metadata_values.get('In The Web Dictionary', None),
-                #'Is This A Proposed New Sign?': metadata_values.get('Is This A Proposed New Sign?', None),
-                #'Exclude From Ecv': metadata_values.get('Exclude From Ecv', None),
-                'Repeated Movement': metadata_values.get('Repeated Movement', None),
-                'Alternating Movement': metadata_values.get('Alternating Movement', None),
-                #'Link': metadata_values.get('Link', None),
-                #'Video': metadata_values.get('Video', None),
-                #'Affiliation': metadata_values.get('Affiliation', None),
-                'Senses: English': metadata_values.get('Senses: English', None),
-                'Weak Hand': metadata_values.get('Weak Hand', None),
-                'Relative Orientation: Movement': metadata_values.get('Relative Orientation: Movement', None),
-                #'Movement Direction': metadata_values.get('Movement Direction', None),
-                #'Tags': metadata_values.get('Tags', None),
-                'Movement Shape': metadata_values.get('Movement Shape', None),
-                'Orientation Change': metadata_values.get('Orientation Change', None),
-                'Location': metadata_values.get('Location', None),
-                'Lemma ID Gloss: English': metadata_values.get('Lemma ID Gloss: English', None),
-                #'Virtual Object': metadata_values.get('Virtual Object', None),
-                'Relative Orientation: Location': metadata_values.get('Relative Orientation: Location', None),
-                'Strong Hand Number': metadata_values.get('Strong Hand Number', None),
-                'Handshape Change': metadata_values.get('Handshape Change', None),
-                #'Weak Hand Number': metadata_values.get('Weak Hand Number', None),
-                #'Phonetic Variation': metadata_values.get('Phonetic Variation', None),
-                #'Notes': metadata_values.get('Notes', None),
-                #'Contact Type': metadata_values.get('Contact Type', None),
-                #'Sequential Morphology': metadata_values.get('Sequential Morphology', None),
-                #'Semantic Field': metadata_values.get('Semantic Field', None),
-                #'Word Class': metadata_values.get('Word Class', None),
-                #'Weak Drop': metadata_values.get('Weak Drop', None),
-                #'Relation Between Articulators': metadata_values.get('Relation Between Articulators', None),
-                #'Phonology Other': metadata_values.get('Phonology Other', None),
-                #'Iconic Image': metadata_values.get('Iconic Image', None),
-                #'Named Entity': metadata_values.get('Named Entity', None),
-                #'Weak Prop': metadata_values.get('Weak Prop', None),
-                'Mouth Gesture': metadata_values.get('Mouth Gesture', None),
-                #'Weak Hand Letter': metadata_values.get('Weak Hand Letter', None),
-                #'Simultaneous Morphology': metadata_values.get('Simultaneous Morphology', None),
-                #'NME Videos': metadata_values.get('NME Videos', None),
-                #'Concepticon Concept Set': metadata_values.get('Concepticon Concept Set', None),
-                #'Blend Morphology': metadata_values.get('Blend Morphology', None),
-                'Mouthing': metadata_values.get('Mouthing', None)
+                'Gloss ID': row.get('Gloss ID', None),
+                'Annotation ID Gloss: English': row.get('Annotation ID Gloss: English', None),
+                'Lemma ID Gloss: Dutch': row.get('Lemma ID Gloss: Dutch', None),
+                'Senses: Dutch': row.get('Senses: Dutch', None),
+                'Annotation Instructions': row.get('Annotation Instructions', None),
+                'In The Web Dictionary': row.get('In The Web Dictionary', None),
+                'Is This A Proposed New Sign?': row.get('Is This A Proposed New Sign?', None),
+                'Exclude From Ecv': row.get('Exclude From Ecv', None),
+                'Repeated Movement': row.get('Repeated Movement', None),
+                'Alternating Movement': row.get('Alternating Movement', None),
+                'Link': row.get('Link', None),
+                'Video': row.get('Video', None),
+                'Affiliation': row.get('Affiliation', None),
+                'Senses: English': row.get('Senses: English', None),
+                'Weak Hand': row.get('Weak Hand', None),
+                'Relative Orientation: Movement': row.get('Relative Orientation: Movement', None),
+                'Movement Direction': row.get('Movement Direction', None),
+                'Tags': row.get('Tags', None),
+                'Movement Shape': row.get('Movement Shape', None),
+                'Orientation Change': row.get('Orientation Change', None),
+                'Location': row.get('Location', None),
+                'Lemma ID Gloss: English': row.get('Lemma ID Gloss: English', None),
+                'Virtual Object': row.get('Virtual Object', None),
+                'Relative Orientation: Location': row.get('Relative Orientation: Location', None),
+                'Strong Hand Number': row.get('Strong Hand Number', None),
+                'Handshape Change': row.get('Handshape Change', None),
+                'Weak Hand Number': row.get('Weak Hand Number', None),
+                'Phonetic Variation': row.get('Phonetic Variation', None),
+                'Notes': row.get('Notes', None),
+                'Contact Type': row.get('Contact Type', None),
+                'Sequential Morphology': row.get('Sequential Morphology', None),
+                'Semantic Field': row.get('Semantic Field', None),
+                'Word Class': row.get('Word Class', None),
+                'Weak Drop': row.get('Weak Drop', None),
+                'Relation Between Articulators': row.get('Relation Between Articulators', None),
+                'Phonology Other': row.get('Phonology Other', None),
+                'Iconic Image': row.get('Iconic Image', None),
+                'Named Entity': row.get('Named Entity', None),
+                'Weak Prop': row.get('Weak Prop', None),
+                'Mouth Gesture': row.get('Mouth Gesture', None),
+                'Weak Hand Letter': row.get('Weak Hand Letter', None),
+                'Simultaneous Morphology': row.get('Simultaneous Morphology', None),
+                'NME Videos': row.get('NME Videos', None),
+                'Concepticon Concept Set': row.get('Concepticon Concept Set', None),
+                'Blend Morphology': row.get('Blend Morphology', None),
+                'Mouthing': row.get('Mouthing', None)
             }
-
-            # Add the new row to the list
+            # Append the new row to the list
             rows.append(new_row)
-    
-    # Convert the list of rows to a DataFrame
+
+    # Convert the list of rows into a DataFrame
     df = pd.DataFrame(rows, columns=columns)
-    
+
     return df
     
 
 # Read h1_dict
-h2a_dict = read_txt_to_df(h2a_file_path)
-h1_dict = read_txt_to_df(h1_file_path)
-h2s_dict = read_txt_to_df(h2s_file_path)
+#h2a_dict = read_txt_to_df(h2a_file_path)
+#h1_dict = read_txt_to_df(h1_file_path)
+#h2s_dict = read_txt_to_df(h2s_file_path)
+df = read_df_meta_to_df(df_meta)
 
 
 def process_glosses_for_handshape(h1_dict, h2s_dict, h2a_dict):
@@ -257,26 +281,19 @@ def process_glosses_for_handedness(df):
     
     return pd.DataFrame(processed_rows)
 
-# Process glosses
-if property == 'Handedness':
-    df = process_glosses_for_handedness(h1_dict, h2s_dict, h2a_dict)
-elif property == 'Strong Hand':
-    df = process_glosses_for_handshape(h1_dict, h2s_dict, h2a_dict)
-else:
-    exit()
-
 
 # ----------------------------------------------
 # Select Source
 ###############################################
 #df = df[((df['source'] == 'SB'))] # | ((df['source'] == 'Corpus') & (df['Handedness'] == '2s'))] # | ((df['source'] == 'Corpus') & (df['Handedness'] == '1'))]
-df = df[((df['source'] == 'SB') & (df['Handedness'] == '1'))]
 #labels = ['B_curved', 'Money', '1', '1_curved', 'B', '5', 'S', 'C', 'V', 'W', 'A', 'V_curved', '4', 'Baby_C', 'C_spread', 'Baby_beak_open', 'Beak', '5r', 'T', 'L', 'I', 'M', 'N', 'K', 'Y', 'Beak_open', 'B_bent', 'Beak_open_spread', '3', 'O', 'Beak_spread', 'Baby_O', 'Baby_beak', '5m']
 
 #["B", "1", "5", "S", "C", "A", "T", "V", "C_spread", "Y", "N", "B_bent", "Money", "Baby_C", "B_curved", "1_curved", "V_curved", "L", "Beak", "5m"]
 
 #df = df[(df['Strong Hand'].isin(labels) )]
 print('Number of classes = ', len(df['Strong Hand'].value_counts()))
+if preselected_handshapes is not None:
+    df = df[(df['Strong Hand'].isin(preselected_handshapes))]
 
 # ----------------------------------------------
 # Remove Corrupted Files
@@ -383,7 +400,7 @@ def select_num_classes(df, num_classes=35):
     return df[df['Strong Hand'].isin(top_values)].copy()
 
 
-df = select_num_classes(df, num_classes=number_handshape_classes)
+#df = select_num_classes(df, num_classes=number_handshape_classes)
 #df = df[df['Strong Hand'].isin(['B', '1', 'S', 'C', 'T'])]
 # Sort the DataFrame first by 'Strong Hand', then by 'Source' (prioritizing 'SB' over 'Corpus')
 
