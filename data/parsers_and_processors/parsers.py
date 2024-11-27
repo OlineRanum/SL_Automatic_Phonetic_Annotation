@@ -216,7 +216,7 @@ class HamerParser:
                     # Replace the last '.' with '-' (handle cases like 6.ORD-B)
                     filepath_parts = filepath.rpartition('.')
                     modified_filepath = filepath_parts[0] + '-' + filepath_parts[2]
-                    print(modified_filepath)
+
                     with open(modified_filepath, 'r') as f:
                         data = json.load(f)
                 except FileNotFoundError:
@@ -225,6 +225,7 @@ class HamerParser:
 
 
         data_filtered = self.processor.get_cleaned_hand(data, handedness)
+        
         if data_filtered is None:
             print('File Corrupted ', filename)
             self.corrupted_files += 1
@@ -249,13 +250,13 @@ class HamerParser:
         
         if ".pkl" not in output_filename:
             output_filename = output_filename + ".pkl"
-        print('-------------')
-        print(output_filename)
+
         
         output_filepath = os.path.join(self.destination_dir, output_filename)
 
         # Save the dictionary as a .pkl file
         with open(output_filepath, 'wb') as pkl_file:
+            print('Saving file', output_filepath)
             pickle.dump(hand_data, pkl_file)
     
         
@@ -314,8 +315,8 @@ class HamerParser:
                         
                         self.process_hamer_file(filepath, filename, 'R')
                         total += 1
-                print('Filepath removed', filepath)
-                os.remove(filepath)    
+                #print('Filepath removed', filepath)
+                #os.remove(filepath)    
             
         print('Total number of processed files', total)
         print('Percentage of left handed signs', left/total)
@@ -331,13 +332,12 @@ class HamerParser:
         """
         # Ensure the destination directory exists
         os.makedirs(self.destination_dir, exist_ok=True)
-        print(self.source_dir)
+
         # Loop through all .hamer files in the source directory
         files = os.listdir(self.source_dir)
         
         for filename in tqdm(files, desc="Converting files"):
             if filename.endswith("." + pose_type):
-                print(filename)
                 
                 filepath = os.path.join(self.source_dir, filename)
                 
@@ -352,7 +352,7 @@ class HamerParser:
                 self.process_hamer_file(filepath, filename, 'L')    
                 self.process_hamer_file(filepath, filename, 'R')
 
-                print('Filepath removed', filepath)
+                #print('Filepath removed', filepath)
                 #filepath = os.path.join(self.destination_dir, 'normalized_'+filename[:-12] + '.hamer')
                 #os.remove(filepath)
     
@@ -382,6 +382,8 @@ class HamerParser:
             total += 1       
         print('Number of corrupted files', self.corrupted_files)    
         print('Total number of processed files', total)
+    
+    
         
 
 
@@ -406,7 +408,7 @@ class EafParser:
             time_id = time_slot.get("TIME_SLOT_ID")
             time_value = int(time_slot.get("TIME_VALUE"))
             time_slots[time_id] = time_value
-        print(time_slots)
+
         
 
        # Find the annotations in the SENTENCE tier
@@ -496,7 +498,7 @@ class MetadataParser:
             
         
         for item in metadata:
-            print(item)
+
             # Append a list for each instance to self.gloss_dict
             self.gloss_dict.extend(
                 [instance['video_id'], instance['split'], instance['source'],instance['Sign Type'], instance.get('Handshape', '-1')]
@@ -540,7 +542,9 @@ class MetadataParser:
                     details.get('Handedness', -1),
                     details.get('Strong Hand', -1),
                     details.get('Weak Hand', -1),
-                    details.get('Affiliation', -1)
+                    details.get('Affiliation', -1),
+                    details.get('Location', -1),
+                    details.get('Link', -1)
                 ])
 
                 # Convert the list of dictionaries to a DataFrame
@@ -552,7 +556,9 @@ class MetadataParser:
             'Handedness', 
             'Strong Hand', 
             'Weak Hand', 
-            'Affiliation'
+            'Affiliation',
+            'Location',
+            'Link'
         ])
         
         return gloss_df

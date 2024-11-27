@@ -147,6 +147,7 @@ class ManoForwardKinematics:
         frames_landmarks = []
 
         # First, extract landmarks from each frame
+
         for frame in hand_data:
             if not frame or not frame[0]:
                 frames_landmarks.append(None)
@@ -182,7 +183,10 @@ class ManoForwardKinematics:
 
         # Apply the filter along the frames axis
         try:
-            filtered_data = self.butterworth_filter(data_array, cutoff, fs, order=3)
+            filtered_data_butterworth = self.butterworth_filter(data_array, cutoff, fs, order=3)
+            print(filtered_data)
+            print(filtered_data_butterworth)    
+            filtered_data = filtered_data_butterworth
         except ValueError as e:
             print(f"Error filtering {hand_label} data: {e}")
             return None, None
@@ -202,6 +206,7 @@ class ManoForwardKinematics:
             self.generate_gif(filtered_frames_landmarks, hand_label, output_dir, hamer_file)
 
         # Return the filtered frames
+        print(filtered_frames_landmarks)
         return filtered_frames_landmarks, valid_frames
 
     def normalize_and_save(self, hand_data, hand_label, hamer_file, output_path, create_gif=False):

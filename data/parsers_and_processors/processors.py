@@ -111,9 +111,9 @@ class HamerProcessor:
         except:
             print(handedness)
             processed_hand = self.clean_hamer_list(hand)
-            
-            if processed_hand.shape == (0,) or processed_hand.ndim == 2:
-                print(handedness, processed_hand.shape) 
+            print('This', processed_hand.ndim)
+            print(handedness, processed_hand.shape)
+            if processed_hand.shape == (0,):
                 return None
                 #print('Hand data is empty')
     
@@ -122,8 +122,7 @@ class HamerProcessor:
                 return None
     
         if processed_hand.ndim == 2:
-            print(handedness, processed_hand.shape)
-            return None
+            processed_hand = processed_hand.reshape(-1, 21, 3)
         if processed_hand.ndim == 4:
             processed_hand = processed_hand.squeeze(1)
         
@@ -149,6 +148,7 @@ class MediaPipeProcessor:
         conf_l = conf[:, :, -42:-21]  # Left hand confidence
 
         return feat_r, feat_l, conf_r, conf_l
+    
     
     def crop_frames(self, data, fraction=3):
         # Calculate the number of frames

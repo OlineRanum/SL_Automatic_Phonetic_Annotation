@@ -43,6 +43,13 @@ def resize_with_aspect_ratio(frame, target_width, target_height):
 
     return resized_frame
 
+def populate_empty(data):
+    for key, value in data.items():
+        if not value:  # Check if the list is empty
+            data[key] = [np.zeros((21, 3)).tolist()]  # Add a (23, 3) zero array as a nested list
+            #print(f"{key} was empty and has been populated.")
+        else:
+            continue #print(f"{key} is not empty.")
 
 def process_video(video_path, URL, crop):
     cap = cv2.VideoCapture(video_path)
@@ -58,8 +65,8 @@ def process_video(video_path, URL, crop):
         start_frame = total_frames // 3  # End of the first 1/3
         end_frame = 2 * total_frames // 3  # Start of the last 1/3
     else:
-        start_frame = 0
-        end_frame = total_frames
+        start_frame = 40
+        end_frame = 60 #total_frames
     print(f"Processing frames from {start_frame} to {end_frame}")
     # Set the frame rate to 25fps
     
@@ -117,7 +124,7 @@ def process_video(video_path, URL, crop):
         if response.status_code == 200:
             try:
                 json_data = response.json()  # Assuming the response is in JSON format
-                # print(json_data)
+                populate_empty(json_data)
                 json_list.append(json_data)
             except json.JSONDecodeError:
                 print(f"Failed to decode JSON response for frame {frame_count}")
@@ -135,7 +142,7 @@ def process_video(video_path, URL, crop):
     return json_list
 
 
-def main(input_folder, crop = False):
+def main_hamer(input_folder, crop = False):
     # Extract frames, process each frame, and collect the JSON data
     
     # Constants
@@ -146,78 +153,81 @@ def main(input_folder, crop = False):
 
     external_dict_file = None #'PoseTools/data/metadata/metadata_1_2s.json'
     dict_file = None #'PoseTools/data/metadata/output_2a.txt'#'PoseTools/results/handedness.txt'
-
-    errors = 0
     
-    for filename in os.listdir(input_folder+'/video_files'):
-        if filename.endswith(".mp4"):  # Assuming your videos are in .mp4 format
-            video_path = os.path.join(input_folder +'/video_files', filename)
-            output_folder = os.path.join(input_folder, 'hamer_files')
-            output_video_path = os.path.join(output_folder, filename[:-4] + '.hamer')
+    errors = 0
+    files_to_process = [
+        filename for filename in os.listdir(input_folder+'/video_files')
+        if filename.endswith(".mp4") and not os.path.exists(os.path.join(input_folder+'/hamer_files', filename[:-4] + '.hamer'))
+        ]
+    
+    for filename in files_to_process:
+        video_path = os.path.join(input_folder +'/video_files', filename)
+        output_folder = os.path.join(input_folder, 'hamer_files')
+        output_video_path = os.path.join(output_folder, filename[:-4] + '.hamer')
+        
+        if os.path.exists(output_video_path):
+            print(f"Skipping {filename} - already processed.")
+            continue
+        print(f"Processing video: {video_path}")
+        try:    
+            json_data = process_video(video_path, URL, crop)
+        except ValueError:
+            errors += 1
+            continue
+        concatenated_l_hand = []
+        concatenated_r_hand = []
+
+        #we have to convert the json by collecting all l_hand data from all frames and put them together in a list under l_hand, same goes for r_)hand
+        for item in json_data:
+            # Extract the l_hand and r_hand values and extend the concatenated lists
+            concatenated_l_hand.append(item["l_hand"])
+            concatenated_r_hand.append(item["r_hand"])
+
+            # Create the new dictionary with all concatenated l_hand and r_hand data
+            json_data = {"l_hand": concatenated_l_hand, "r_hand": concatenated_r_hand}
             
-            if os.path.exists(output_video_path):
-                print(f"Skipping {filename} - already processed.")
-                continue
-            print(f"Processing video: {video_path}")
-            try:    
-                json_data = process_video(video_path, URL, crop)
-            except ValueError:
-                errors += 1
-                continue
-            concatenated_l_hand = []
-            concatenated_r_hand = []
+            mano_fk = ManoForwardKinematics()
 
-            #we have to convert the json by collecting all l_hand data from all frames and put them together in a list under l_hand, same goes for r_)hand
-            for item in json_data:
-                # Extract the l_hand and r_hand values and extend the concatenated lists
-                concatenated_l_hand.append(item["l_hand"])
-                concatenated_r_hand.append(item["r_hand"])
-
-                # Create the new dictionary with all concatenated l_hand and r_hand data
-                json_data = {"l_hand": concatenated_l_hand, "r_hand": concatenated_r_hand}
-                
-                mano_fk = ManoForwardKinematics()
-
-                # Save the JSON data to a temporary file
-                #name temp file with filetype hamer
-                hamerfile = filename[:-4] + ".hamer"
-                #join hamerfile to hamer temp folder
-                hamerfile = os.path.join(input_folder +'/hamer_files', hamerfile)
-                #write json data to temp file
-                with open(hamerfile, 'w') as f:
-                    json.dump(json_data, f)
-                
+            # Save the JSON data to a temporary file
+            #name temp file with filetype hamer
+            hamerfile = filename[:-4] + ".hamer"
+            #join hamerfile to hamer temp folder
+            hamerfile = os.path.join(input_folder +'/hamer_files', hamerfile)
+            #write json data to temp file
+            with open(hamerfile, 'w') as f:
+                json.dump(json_data, f)
             
-            output_data = {}
-            
+        
+        output_data = {}
+        
 
-            # Process each hand
-            for hand_label in ['l_hand', 'r_hand']:
-                #get hand_label from hamerfile
-                hand_data = json_data[hand_label]
-                
-                # Process and normalize the hand data, create GIFs
-                try:
-                    normalized_hand_data = mano_fk.normalize_and_save(
-                        hand_data, hand_label, filename[:-4] + ".hamer", input_folder, create_gif=False
-                    )
-                except Exception as e:
-                    print(f"Error processing {hand_label} in file {hamerfile}: {e}")
-                    continue  # Skip processing this hand
-                if normalized_hand_data is not None:
-                    output_data[hand_label] = normalized_hand_data
-                    
-
-            # Save the output data to a JSON file
-            output_filename = f"normalized_"+filename[:-3]+"hamer"
-            output_file = os.path.join(output_folder, output_filename)
+        # Process each hand
+        for hand_label in ['l_hand', 'r_hand']:
+            #get hand_label from hamerfile
+            hand_data = json_data[hand_label]
             
+            # Process and normalize the hand data, create GIFs
             try:
-                with open(output_file, 'w') as f:
-                    json.dump(output_data, f)
-                    print(f"Saved normalized data to {output_file}")
+                normalized_hand_data = mano_fk.normalize_and_save(
+                    hand_data, hand_label, filename[:-4] + ".hamer", input_folder, create_gif=False
+                )
             except Exception as e:
-                    print(f"Error saving normalized data for file {output_file}: {e}")
+                print(f"Error processing {hand_label} in file {hamerfile}: {e}")
+                continue  # Skip processing this hand
+            if normalized_hand_data is not None:
+                output_data[hand_label] = normalized_hand_data
+                
+
+        # Save the output data to a JSON file
+        output_filename = f"normalized_"+filename[:-3]+"hamer"
+        output_file = os.path.join(output_folder, output_filename)
+        
+        try:
+            with open(output_file, 'w') as f:
+                json.dump(output_data, f)
+                print(f"Saved normalized data to {output_file}")
+        except Exception as e:
+                print(f"Error saving normalized data for file {output_file}: {e}")
     
     print(f"Errors encountered: {errors}")
     
