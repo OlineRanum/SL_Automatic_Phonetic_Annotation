@@ -11,11 +11,16 @@ src/models/temporal_ponita
 trained_models/
 
 
+*.gif
 *.mp4
 *.hamer
 *.pkl
 *.pose
 *.png
+
+# Server stuff
+src/modules/server/node_modules/
+
 
 ## Graphics
 handedness/graphics/reference_poses/
