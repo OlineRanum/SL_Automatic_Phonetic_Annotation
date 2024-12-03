@@ -65,8 +65,8 @@ def process_video(video_path, URL, crop):
         start_frame = total_frames // 3  # End of the first 1/3
         end_frame = 2 * total_frames // 3  # Start of the last 1/3
     else:
-        start_frame = 40
-        end_frame = 60 #total_frames
+        start_frame = 0
+        end_frame = total_frames
     print(f"Processing frames from {start_frame} to {end_frame}")
     # Set the frame rate to 25fps
     
@@ -159,6 +159,19 @@ def main_hamer(input_folder, crop = False):
         filename for filename in os.listdir(input_folder+'/video_files')
         if filename.endswith(".mp4") and not os.path.exists(os.path.join(input_folder+'/hamer_files', filename[:-4] + '.hamer'))
         ]
+    
+    def ensure_directory_exists(directory):
+        """
+        Check if the directory exists, and create it if it does not.
+        """
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            print(f"Directory created: {directory}")
+        else:
+            print(f"Directory already exists: {directory}")
+
+    ensure_directory_exists(os.path.join(input_folder, 'hamer_files'))
+    ensure_directory_exists(os.path.join(input_folder, 'hamer_pkl'))
     
     for filename in files_to_process:
         video_path = os.path.join(input_folder +'/video_files', filename)

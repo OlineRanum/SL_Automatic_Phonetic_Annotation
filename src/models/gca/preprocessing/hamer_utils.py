@@ -1,23 +1,7 @@
-import cv2
-import requests
-import json
-import sys
-import tempfile
-import os
-from tqdm import tqdm
 import numpy as np
-import matplotlib.pyplot as plt
-import json
-import os
-from PIL import Image
-from mpl_toolkits.mplot3d import Axes3D
 from scipy.signal import butter, filtfilt
-import subprocess
-import sys
-import argparse
-import os
-import torch
-import omegaconf
+
+
 
 # Define the Joint class
 class Joint:
@@ -184,8 +168,6 @@ class ManoForwardKinematics:
         # Apply the filter along the frames axis
         try:
             filtered_data_butterworth = self.butterworth_filter(data_array, cutoff, fs, order=3)
-            print(filtered_data)
-            print(filtered_data_butterworth)    
             filtered_data = filtered_data_butterworth
         except ValueError as e:
             print(f"Error filtering {hand_label} data: {e}")
@@ -206,7 +188,7 @@ class ManoForwardKinematics:
             self.generate_gif(filtered_frames_landmarks, hand_label, output_dir, hamer_file)
 
         # Return the filtered frames
-        print(filtered_frames_landmarks)
+
         return filtered_frames_landmarks, valid_frames
 
     def normalize_and_save(self, hand_data, hand_label, hamer_file, output_path, create_gif=False):
@@ -235,5 +217,5 @@ class ManoForwardKinematics:
 
                 # Convert the transformed landmarks to list for JSON output
                 output_frames.append(transformed_landmarks.tolist())
-        print(len(hand_data))
+
         return output_frames
