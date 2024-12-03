@@ -1,0 +1,550 @@
+<!-- public/index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Phonetic Modelling</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+
+        /* Tab Container */
+        .tab {
+            overflow: hidden;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+
+        /* Style the buttons inside the tab */
+        .tab button {
+            background-color: inherit;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: background-color 0.3s;
+            font-size: 17px;
+        }
+
+        /* Change background color of buttons on hover */
+        .tab button:hover {
+            background-color: #ddd;
+        }
+
+        /* Create an active/current tablink class */
+        .tab button.active {
+            background-color: #ccc;
+        }
+
+        /* Tab content */
+        .tabcontent {
+            display: none;
+            padding: 20px 0;
+        }
+
+        /* Show the active tab content */
+        .tabcontent.active {
+            display: block;
+        }
+
+        /* Flex Container for Data Viewer */
+        .data-viewer-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* GIF Viewer Styles */
+        .gif-viewer {
+            flex: 1 1 60%;
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .gif-viewer h2 {
+            margin-bottom: 10px;
+        }
+
+        .gif-viewer select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .frame-display {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .frame-display img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        .frame-display #frame-info {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .controls button:disabled {
+            background-color: #eee;
+            cursor: not-allowed;
+        }
+
+        .controls label {
+            margin-right: 5px;
+        }
+
+        .controls input[type="number"] {
+            width: 80px;
+            padding: 5px;
+            font-size: 14px;
+        }
+
+        /* Loading Indicator Styles */
+        #loading {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+            text-align: center;
+        }
+
+        #progress-container {
+            width: 80%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin: 10px auto 0 auto;
+            height: 20px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #76c7c0;
+            transition: width 0.3s ease;
+        }
+
+        /* Note-Taking Styles */
+        .note-taking {
+            flex: 1 1 35%;
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-height: 900px;
+            overflow-y: auto;
+        }
+
+        .note-taking h2 {
+            margin-bottom: 10px;
+        }
+
+        #note-input {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            font-size: 16px;
+            resize: vertical;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        #save-note-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50; /* Green */
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #save-note-btn:hover {
+            background-color: #45a049;
+        }
+
+        #notes-list {
+            margin-top: 20px;
+        }
+
+        .note-item {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4CAF50;
+            border-radius: 3px;
+        }
+
+        .note-timestamp {
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 5px;
+        }
+
+        .note-content {
+            font-size: 16px;
+        }
+
+        .note-item button {
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            background-color: #f44336; /* Red */
+            color: white;
+            border: none;
+            border-radius: 3px;
+            margin-top: 5px;
+        }
+
+        .note-item button:hover {
+            background-color: #d32f2f;
+        }
+
+        /* Reference Poses Viewer Styles */
+        .reference-poses-layout {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 20px; /* Space between columns */
+        }
+
+        /* Left Column: Pose Selection */
+        .pose-selection {
+            flex: 0 0 300px; /* Fixed width */
+            max-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .pose-selection label {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* Vertical List of Checkboxes with Scroll */
+        #pose-select-container {
+            display: flex;
+            flex-direction: column;
+            max-height: 600px; /* Adjust as needed */
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        #pose-select-container div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        #pose-select-container input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        #pose-select-container img {
+            width: 50px;
+            height: auto;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            object-fit: cover;
+        }
+
+        /* Clear All Button Styles */
+        #clear-all-btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #f44336; /* Red */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        #clear-all-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        /* Right Column: Pose Display */
+        .pose-display {
+            flex: 1;
+            overflow-x: auto; /* Enable horizontal scrolling */
+            white-space: nowrap; /* Prevent images from wrapping */
+            padding-bottom: 10px; /* Space for scrollbar */
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #fff;
+        }
+
+        #reference-poses-container {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 20px; /* Space between images */
+        }
+
+        .reference-image-wrapper {
+            text-align: center;
+            max-width: 600px; /* Limit image size */
+        }
+
+        .reference-image-wrapper img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            margin-top: 5px;
+        }
+
+        .reference-image-wrapper .caption {
+            margin-bottom: 5px; /* Move caption above image */
+            font-size: 14px;
+            word-wrap: break-word; /* Handle long filenames */
+        }
+
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4CAF50; /* Green for success */
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            opacity: 0.9;
+            z-index: 1000;
+            display: none; /* Hidden by default */
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        #notification.show {
+            display: block;
+            transform: translateY(0);
+        }
+
+        #notification.hide {
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        #update-all-notes-btn {
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            background-color: #4CAF50; /* Green */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        #update-all-notes-btn:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+
+        #update-all-notes-btn:disabled {
+            background-color: #9E9E9E;
+            cursor: not-allowed;
+        }
+        /* styles.css */
+
+    /* Style for All Notes List */
+    #all-notes-list {
+        margin-top: 20px;
+    }
+
+    .gif-container {
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    .frame-container {
+        border: 1px dashed #ccc;
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    ul {
+        list-style-type: disc;
+        margin-left: 40px;
+    }
+
+    li {
+        margin-bottom: 5px;
+    }
+
+        /* Responsive Design */
+        @media (max-width: 1000px) {
+            .data-viewer-container {
+                flex-direction: column;
+            }
+
+            .gif-viewer, .note-taking {
+                flex: 1 1 100%;
+            }
+
+            .reference-poses-layout {
+                flex-direction: column;
+            }
+
+            .pose-selection, .pose-display {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
+        }
+
+            
+    </style>
+
+</head>
+<body>
+    <h1>Phonetic Modelling</h1>
+
+    <!-- Tab Buttons -->
+    <div class="tab">
+        <button class="tablinks active" onclick="openTab(event, 'DataViewer')">Data Viewer</button>
+        <button class="tablinks" onclick="openTab(event, 'ReferencePosesViewer')">Reference Poses Viewer</button>
+        <button class="tablinks" onclick="openTab(event, 'AllNotes')">All Notes</button> <!-- New Tab -->
+    </div>
+
+    <!-- Tab Content: Data Viewer -->
+    <div id="DataViewer" class="tabcontent active">
+        <div class="data-viewer-container">
+            <!-- GIF Viewer Section -->
+            <div class="gif-viewer">
+                <h2>GIF Viewer</h2>
+                <select id="gif-select">
+                    <option value="">--Select a GIF--</option>
+                    <!-- Options will be populated dynamically -->
+                </select>
+                <div id="loading" style="display: none;">
+                    Loading...
+                    <div id="progress-container">
+                        <div id="progress-bar"></div>
+                    </div>
+                </div>
+                <div class="frame-display">
+                    <img id="gif-image" src="" alt="Selected GIF Frame">
+                    <div id="frame-info">Frame: 0</div>
+                </div>
+                <div class="controls">
+                    <button id="prev-btn" disabled>Previous Frame</button>
+                    <button id="next-btn" disabled>Next Frame</button>
+                    <button id="toggle-play-btn" disabled>Play GIF</button>
+                    <label for="frame-rate">Frame Rate (ms):</label>
+                    <input type="number" id="frame-rate" value="200" min="10" max="1000">
+                </div>
+            </div>
+
+            <!-- Note-Taking Section -->
+            <div class="note-taking">
+                <h2>Frame Notes</h2>
+                <textarea id="note-input" placeholder="Write your note here..."></textarea>
+                <button id="save-note-btn">Save Note</button>
+
+                <div id="notes-list">
+                    <!-- Notes will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Content: Reference Poses Viewer -->
+    <div id="ReferencePosesViewer" class="tabcontent">
+        <div class="reference-poses-layout">
+            <!-- Left Column: Checkboxes and Clear All Button -->
+            <div class="pose-selection">
+                <label>Select Reference Poses:</label>
+                <button id="clear-all-btn">Clear All</button>
+                <div id="pose-select-container">
+                    <!-- Checkboxes will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Right Column: Pose Display -->
+            <div class="pose-display">
+                <div id="pose-loading" style="display: none;">
+                    Loading pose images...
+                </div>
+                <div id="reference-poses-container">
+                    <!-- Multiple images will be displayed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Content: All Notes -->
+    <div id="AllNotes" class="tabcontent">
+        <h2>All Notes</h2>
+        <button id="update-all-notes-btn">Update Notes</button> <!-- Added Update Button -->
+        <div id="all-notes-list"></div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+
+    <!-- Add the openTab function -->
+    <script>
+        function openTab(evt, tabName) {
+            // Declare all variables
+            var i, tabcontent, tablinks;
+
+            // Get all elements with class="tabcontent" and hide them
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+                tabcontent[i].classList.remove('active');
+            }
+
+            // Get all elements with class="tablinks" and remove the class "active"
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            document.getElementById(tabName).style.display = "block";
+            document.getElementById(tabName).classList.add('active');
+            evt.currentTarget.className += " active";
+
+            if (tabName === 'AllNotes') {
+                fetchAndDisplayAllNotes();
+            }
+        }
+    </script>
+</body>
+</html>
