@@ -14,34 +14,33 @@ This repository contains code for processing pose data from sign language videos
 1. Clone the repository:
 
 ```
-   git clone https://github.com/yourusername/pose-tools.git
-   cd pose-tools 
+   git clone https://github.com/OlineRanum/SL_Automatic_Phonetic_Annotation.git 
 ```
 
 2. Install the environmnet 
 ```
-    pip install -r requirements.txt
+    
 ```
+Currently do not have an environment for the repository ready - please refer to the openhands environment at the monsterfish server.
 
+# Run
 
 This repository contains code to process poses, with functionalities for automatically annotating phonetic attributes of sign languages.
 
-## Data Utilities 
+## Processors
 
-### Metadata Preparations
-To prepare the metadata, configure the parameters in the metadata_processor script and run:
-
+### Process mp4 file full (inc. hamer extraction, mediapipe extraction and labeling)
 ```
-python -m PoseTools.data.parsers_and_processors.metadata_processor
 ```
-
 ### Pose Constructors and Format Converters 
 #### Hamer 3D-Handshape pose estimation
 1. Activate server environment 
 ```
 /home/gomer/hamer/run_server.py
 source .hamer/bin/activate
+python run_server.py
 ```
+
 2. Run Hamer Pose Estimator
 ```
 python -m data.parsers_and_processors.converters.vid_to_hamer

@@ -19,7 +19,7 @@ trained_models/
 *.png
 
 # Server stuff
-src/modules/server/node_modules/
+src/server/node_modules/
 
 
 ## Graphics
