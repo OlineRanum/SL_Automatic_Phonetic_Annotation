@@ -174,8 +174,6 @@ class ActivationAnalyzer:
                     mode='constant', 
                     constant_values=0
                 )
-        print('Hammer left shape', self.hamer_left.shape)
-        print('Hammer right shape', self.hamer_right.shape)
         handshape_left_flat = self.hamer_left.reshape(self.num_frames, -1)
         handshape_right_flat = self.hamer_right.reshape(self.num_frames, -1)
 
@@ -187,13 +185,13 @@ class ActivationAnalyzer:
         handshape_right_scaled = scaler.fit_transform(handshape_features_right)
 
         # scale the normal vectors
-        self.normal_vectors_left = scaler.fit_transform(self.normal_vectors_left)
-        self.normal_vectors_right = scaler.fit_transform(self.normal_vectors_right)
+        #self.normal_vectors_left = scaler.fit_transform(self.normal_vectors_left)
+        #self.normal_vectors_right = scaler.fit_transform(self.normal_vectors_right)
         
 
         # Combine features
-        oxl,oyl,ozl = [[x] for x in self.normal_vectors_left[:,0]], [[y] for y in self.normal_vectors_left[:,1]], [[z] for z in self.normal_vectors_left[:,2]]
-        oxr,oyr,ozr = [[x] for x in self.normal_vectors_right[:,0]], [[y] for y in self.normal_vectors_right[:,1]], [[z] for z in self.normal_vectors_right[:,2]]
+        #oxl,oyl,ozl = [[x] for x in self.normal_vectors_left[:,0]], [[y] for y in self.normal_vectors_left[:,1]], [[z] for z in self.normal_vectors_left[:,2]]
+        #oxr,oyr,ozr = [[x] for x in self.normal_vectors_right[:,0]], [[y] for y in self.normal_vectors_right[:,1]], [[z] for z in self.normal_vectors_right[:,2]]
         combined_features_left = np.hstack((handshape_left_scaled, left_wrist, left_wrist_vel))#, self.normal_vectors_left[:,1], self.normal_vectors_left[:,2]))
         combined_features_right = np.hstack((handshape_right_scaled, right_wrist, right_wrist_vel))#, self.normal_vectors_right[:,1], self.normal_vectors_right[:,2]))
         joint_features = np.vstack((combined_features_left, combined_features_right))   
