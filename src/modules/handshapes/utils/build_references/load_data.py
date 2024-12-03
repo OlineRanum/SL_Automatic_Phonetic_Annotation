@@ -30,7 +30,7 @@ def load_metadata(pkl_subdirectory, exclude_rad = True):
         return pd.DataFrame(flattened_data).reset_index(drop=True)
 
     # Load the JSON file and convert to a DataFrame with specified columns
-    data = load_json('../glosses_meta.json')
+    data = load_json('/home/gomer/oline/PoseTools/data/metadata/glosses_meta.json')
     df = json_to_dataframe(data, columns_to_keep)
     uva_list  = [f[:-6] for f in os.listdir(pkl_subdirectory) if os.path.isfile(os.path.join(pkl_subdirectory, f))]
     df_meta = df[df['Annotation ID Gloss: Dutch'].isin(uva_list)]
@@ -54,7 +54,7 @@ def load_metadata(pkl_subdirectory, exclude_rad = True):
 
     # Select only the specified columns
     df_meta = df_meta[columns_to_keep]
-
+    print(df_meta)
     return df_meta.reset_index(drop=True)
 
 
@@ -68,7 +68,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 def load_pose_data(df):
     # Generate the list of filenames and corresponding gloss labels
     filenames_and_labels = [
-        (os.path.join('../hamer_pkl', f"{gloss}{suffix}.pkl"), gloss)
+        (os.path.join('/mnt/fishbowl/gomer/oline/hamer_pkl', f"{gloss}{suffix}.pkl"), gloss)
         for gloss in df['Annotation ID Gloss: Dutch'].values
         for suffix in ['-L', '-R']
     ]

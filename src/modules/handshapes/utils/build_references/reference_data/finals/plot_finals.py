@@ -55,10 +55,21 @@ def plot_poses_from_json(json_file):
     
     # Save the figure with an appropriate filename
 
-    plt.savefig('/home/gomer/oline/PoseTools/src/modules/handshapes/utils/finals/finals_'+letter+'.png')
+    plt.savefig('/home/gomer/oline/PoseTools/src/modules/handshapes/utils/build_references/reference_data/finals/img/finals_'+letter+'.png')
     plt.show()
+
+import os 
+directory = '/home/gomer/oline/PoseTools/src/modules/handshapes/utils/build_references/reference_data/finals/poses'
+
+filenames = [
+    filename.split('_avg')[0] 
+    for filename in os.listdir(directory) 
+    if '_avg' in filename
+]
 
 letter = 'V'
 # Example usage
-json_file_path = '/home/gomer/oline/PoseTools/src/modules/handshapes/utils/finals/poses/'+letter+'_avg_pose.json'
-plot_poses_from_json(json_file_path)
+for letter in filenames:
+    print(letter)
+    json_file_path = '/home/gomer/oline/PoseTools/src/modules/handshapes/utils/build_references/reference_data/finals/poses/'+letter+'_avg_pose.json'
+    plot_poses_from_json(json_file_path)

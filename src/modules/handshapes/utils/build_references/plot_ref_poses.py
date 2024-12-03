@@ -64,7 +64,7 @@ def plot_clustered_poses(frame_poses, labels, output_file_name, handshape='Hands
     
     plt.tight_layout()
     # Save the figure
-    plt.savefig(f'{output_dir}/{output_file_name}_{handshape}.png')
+    plt.savefig(f'{output_dir}/finals_{output_file_name}.png')
     #plt.show()
     
     # Return the dictionary of average poses
@@ -96,10 +96,10 @@ def process_and_plot_json_files(directory):
             labels = np.array(labels)
             
             # Define output file name based on the input filename
-            output_file_name = os.path.splitext(filename)[0]
-            
+            output_file_name = os.path.splitext(filename)[0].split('_avg')[0]
+
             # Call the plotting function
-            plot_clustered_poses(frame_poses, labels, output_file_name, handshape='', output_dir='references/poses/figs')
+            plot_clustered_poses(frame_poses, labels, output_file_name, handshape='', output_dir='/home/gomer/oline/PoseTools/src/modules/handshapes/utils/build_references/reference_data/finals/img/')
 
 # Replace 'your_directory_path' with the path to the directory containing the JSON files
-process_and_plot_json_files('references/poses')
+process_and_plot_json_files('/home/gomer/oline/PoseTools/src/modules/handshapes/utils/build_references/reference_data/finals/poses')
