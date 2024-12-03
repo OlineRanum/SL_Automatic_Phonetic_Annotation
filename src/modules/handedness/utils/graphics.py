@@ -1,6 +1,268 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns 
+import os
+import matplotlib.pyplot as plt
+from matplotlib.patches import ConnectionPatch
+import numpy as np
+import numpy.ma as ma
+from pose_format import Pose
+
+import matplotlib.pyplot as plt
+import imageio
+from pose_format import Pose
+from PoseTools.data.parsers_and_processors.processors import MediaPipeProcessor
+from PoseTools.src.utils.preprocessing import PoseSelect
+
+class PosePlotter:
+    def __init__(self, pose = None, path="A.pose"):
+        self.pose_path = path
+        self.pose = pose
+        self.data = None
+        self.conf = None
+        self.wrist_index_left = 15
+        self.wrist_index_right = 16
+        self.right_hand_base_index = np.array([16, 18, 20, 22])
+        self.left_hand_base_index = np.array([15, 17, 19, 21])
+        self.n = len(self.right_hand_base_index)
+
+    def load_pose(self):
+        with open(self.pose_path, "rb") as file:
+            data_buffer = file.read()
+
+        self.pose = Pose.read(data_buffer)
+        data = self.pose.body.data.data
+        conf = self.pose.body.confidence
+
+        mp_select = PoseSelect("mediapipe_holistic_minimal_27")
+        
+        pose = mp_select.clean_keypoints(data)
+        pose = mp_select.get_keypoints_pose(pose)
+
+        return pose, conf
+        
+    
+    def plot_mp_skeleton(self, pose, ax=None, mode = "xy"):
+        """
+        Plot a single frame with keypoints and edges.
+
+        :param pose: Numpy array of shape [T, 27, 2]
+        :param frame_idx: The index of the frame to plot
+        :param ax: Matplotlib Axes object to plot on. If None, a new figure and axes are created.
+        :return: Matplotlib Figure and Axes objects
+        """
+        x = pose[:, 0]
+        y = pose[:, 1]
+        z = -pose[:, 2]
+
+
+        #fig = ax.get_figure()
+
+        # Clear previous plots
+        ax.clear()
+
+
+        # Plot keypoints
+        if mode == 'xy':
+            ax.scatter(x, y, color='blue')
+
+            right_hand_com_x, right_hand_com_y = 0, 0 
+            for ix in self.right_hand_base_index:
+                right_hand_com_x += x[ix]
+                right_hand_com_y += y[ix]
+            ax.scatter(right_hand_com_x/self.n, right_hand_com_y/self.n, color='red')
+            left_hand_com_x, left_hand_com_y = 0, 0
+            for ix in self.left_hand_base_index:
+                left_hand_com_x += x[ix]
+                left_hand_com_y += y[ix]    
+            ax.scatter(left_hand_com_x/self.n, left_hand_com_y/self.n, color='green')
+            #ax.scatter(x[self.wrist_index_left], y[self.wrist_index_left], color='green')
+            #ax.scatter(x[self.wrist_index_right], y[self.wrist_index_right], color='red')
+            
+        elif mode == 'yz':
+            
+            ax.scatter(z, y, color='blue')
+            ax.scatter(z[self.wrist_index_left], y[self.wrist_index_left], color='green')
+            ax.scatter(z[self.wrist_index_right], y[self.wrist_index_right], color='red')
+        
+        ax.set_xlim(-2, 2)
+        ax.set_ylim(-2, 2)
+        # Plot edges
+        #for edge in edges:
+        #    start, end = edge
+        #    ax.plot([x[start], x[end]], [y[start], y[end]], 'r-')
+
+        # Add index numbers to the keypoints
+        #for idx, (x_coord, y_coord) in enumerate(zip(x, y)):
+        #    ax.text(x_coord, y_coord, str(idx), fontsize=8, color='black', ha='right')
+
+        ax.set_aspect('equal', 'box')
+        ax.axis('off')  # Hide axes
+        
+
+        #return fig, ax
+
+    def plot_frame_with_edges(self, pose, frame_idx=0, ax=None, mode = "xy"):
+        """
+        Plot a single frame with keypoints and edges.
+
+        :param pose: Numpy array of shape [T, 27, 2]
+        :param frame_idx: The index of the frame to plot
+        :param ax: Matplotlib Axes object to plot on. If None, a new figure and axes are created.
+        :return: Matplotlib Figure and Axes objects
+        """
+
+        frame = pose[frame_idx]  # Shape [27, 2]
+        x = frame[:, 0]
+        y = frame[:, 1]
+        z = frame[:, 2]
+
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(6, 6))
+        else:
+            fig = ax.get_figure()
+
+        # Clear previous plots
+        ax.clear()
+
+
+        # Plot keypoints
+        if mode == 'xy':
+            ax.scatter(x, y, color='blue')
+            right_hand_base_index = [16, 18, 20, 22]
+            left_hand_base_index = [15, 17, 19, 21]
+            n = len(right_hand_base_index)
+            right_hand_com_x, right_hand_com_y = 0, 0 
+            for ix in right_hand_base_index:
+                right_hand_com_x += x[ix]
+                right_hand_com_y += y[ix]
+            ax.scatter(right_hand_com_x/n, right_hand_com_y/n, color='red')
+            left_hand_com_x, left_hand_com_y = 0, 0
+            for ix in left_hand_base_index:
+                left_hand_com_x += x[ix]
+                left_hand_com_y += y[ix]    
+            ax.scatter(left_hand_com_x/n, left_hand_com_y/n, color='green')
+            #ax.scatter(x[self.wrist_index_left], y[self.wrist_index_left], color='green')
+            #ax.scatter(x[self.wrist_index_right], y[self.wrist_index_right], color='red')
+            
+        elif mode == 'yz':
+            
+            ax.scatter(z, y, color='blue')
+            ax.scatter(z[self.wrist_index_left], y[self.wrist_index_left], color='green')
+            ax.scatter(z[self.wrist_index_right], y[self.wrist_index_right], color='red')
+        
+        ax.set_xlim(-2, 2)
+        ax.set_ylim(-2, 2)
+        # Plot edges
+        #for edge in edges:
+        #    start, end = edge
+        #    ax.plot([x[start], x[end]], [y[start], y[end]], 'r-')
+
+        # Add index numbers to the keypoints
+        #for idx, (x_coord, y_coord) in enumerate(zip(x, y)):
+        #    ax.text(x_coord, y_coord, str(idx), fontsize=8, color='black', ha='right')
+
+        ax.set_aspect('equal', 'box')
+        ax.axis('off')  # Hide axes
+        
+
+        return fig, ax
+
+    def create_gif(self, pose, gif_path="pose_animation.gif", fps=10):
+        """
+        Create a GIF from the pose series.
+
+        :param pose: Numpy array of shape [T, 27, 2]
+        :param gif_path: Path to save the GIF
+        :param fps: Frames per second for the GIF
+        """
+        temp_dir = "temp_pose_frames"
+        os.makedirs(temp_dir, exist_ok=True)
+        filenames = []
+
+        print("Generating frames...")
+        for frame_idx in range(pose.shape[0]):
+            fig, ax = self.plot_frame_with_edges(pose, frame_idx)
+            filename = os.path.join(temp_dir, f"frame_{frame_idx:04d}.png")
+            plt.savefig(filename, bbox_inches='tight', pad_inches=0)
+            filenames.append(filename)
+            plt.close(fig)  # Close the figure to free memory
+
+        print("Creating GIF...")
+        with imageio.get_writer(gif_path, mode='I', fps=fps) as writer:
+            for filename in filenames:
+                image = imageio.imread(filename)
+                writer.append_data(image)
+
+        print(f"GIF saved to {gif_path}")
+
+        # Optional: Clean up temporary frames
+        for filename in filenames:
+            os.remove(filename)
+        os.rmdir(temp_dir)
+        print("Temporary frames cleaned up.")
+
+    
+
+    def create_gif_with_animation(self, pose, gif_path="pose_animation.gif", fps=10):
+        """
+        Alternative method to create a GIF using Matplotlib's animation.
+
+        :param pose: Numpy array of shape [T, 27, 2]
+        :param gif_path: Path to save the GIF
+        :param fps: Frames per second for the GIF
+        """
+        import matplotlib.animation as animation
+
+        fig, ax = plt.subplots(figsize=(6, 6))
+        edges = [
+            (0, 1), (1, 2), (2, 3),
+            (5, 9), (4, 8), (3, 4), (4, 5), (4, 7),
+            (4, 6), (6, 10), (9, 13), (14, 18),
+            (13, 17), (7, 11), (8, 12), (12, 16),
+            (11, 15), (16, 20), (10, 14), (15, 19)
+        ]
+
+        scat = ax.scatter([], [], color='blue')
+        lines = [ax.plot([], [], 'r-')[0] for _ in edges]
+        texts = [ax.text(0, 0, str(idx), fontsize=8, color='black', ha='right') for idx in range(27)]
+
+        ax.set_aspect('equal', 'box')
+        ax.axis('off')  # Hide axes
+
+        def init():
+            scat.set_offsets([])
+            for line in lines:
+                line.set_data([], [])
+            for text in texts:
+                text.set_position((0, 0))
+            return [scat] + lines + texts
+
+        def animate(frame_idx):
+            frame = pose[frame_idx]
+            x = frame[:, 0]
+            y = frame[:, 1]
+            offsets = np.column_stack((x, y))
+            scat.set_offsets(offsets)
+
+            for idx, edge in enumerate(edges):
+                start, end = edge
+                lines[idx].set_data([x[start], x[end]], [y[start], y[end]])
+
+            for idx, text in enumerate(texts):
+                text.set_position((x[idx], y[idx]))
+                text.set_text(str(idx))
+
+            return [scat] + lines + texts
+
+        ani = animation.FuncAnimation(fig, animate, frames=pose.shape[0],
+                                      init_func=init, blit=True)
+
+        ani.save(gif_path, writer='imagemagick', fps=fps)
+        plt.close(fig)
+        print(f"GIF saved to {gif_path} using animation.")
+
 
 def plot_velocity(velocity_r, velocity_l, pose_filename):
     # Calculate the magnitude of the velocity vectors
@@ -46,23 +308,237 @@ def plot_integrated_velocities(integrated_velocities, output_file):
     plt.savefig(output_file)
     plt.close()
 
-def plot_position(pos_r, pos_l, pose_filename):
-    # Calculate the magnitude of the velocity vectors
+import matplotlib.pyplot as plt
+import numpy as np
+import os
 
-    # Create a 1D plot of the velocity profiles
+def plot_position_and_velocity(pos_r, pos_l, active_r, active_l, vel_r, vel_l, pose_filename):
+    """
+    Plot the position and velocity profiles of both hands in a single figure with two subplots.
+    
+    Parameters:
+    - pos_r (list or np.ndarray): Y positions of the right hand.
+    - pos_l (list or np.ndarray): Y positions of the left hand.
+    - active_r (list or np.ndarray): Boolean flags indicating active frames for the right hand.
+    - active_l (list or np.ndarray): Boolean flags indicating active frames for the left hand.
+    - vel_r (list or np.ndarray): Velocity magnitudes of the right hand.
+    - vel_l (list or np.ndarray): Velocity magnitudes of the left hand.
+    - pose_filename (str): Filename to save the plot.
+    """
     frames = np.arange(len(pos_r))
+    
+    # Convert inputs to NumPy arrays for easier indexing
+    pos_r = np.array(pos_r)
+    pos_l = np.array(pos_l)
+    active_r = np.array(active_r)
+    active_l = np.array(active_l)
+    vel_r = np.array(vel_r)
+    vel_l = np.array(vel_l)
+    
+    # Create a figure with two subplots: position and velocity
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10), sharex=True)
+    
+    # ---- Top Subplot: Position Plot ----
+    # Separate active and inactive frames for both hands
+    pos_r_active = pos_r[active_r]
+    frames_active_r = frames[active_r]
+    
+    pos_r_inactive = pos_r[~active_r]
+    frames_inactive_r = frames[~active_r]
+    
+    pos_l_active = pos_l[active_l]
+    frames_active_l = frames[active_l]
+    
+    pos_l_inactive = pos_l[~active_l]
+    frames_inactive_l = frames[~active_l]
+    
+    # Plot inactive points with alpha=0.2
+    if len(pos_r_inactive) > 0:
+        ax1.scatter(frames_inactive_r, pos_r_inactive, label="Right Hand Inactive", color='blue', alpha=0.2)
+    if len(pos_l_inactive) > 0:
+        ax1.scatter(frames_inactive_l, pos_l_inactive, label="Left Hand Inactive", color='orange', alpha=0.2)
+    
+    # Plot active points with alpha=1
+    if len(pos_r_active) > 0:
+        ax1.scatter(frames_active_r, pos_r_active, label="Right Hand Active", color='blue', alpha=1.0)
+    if len(pos_l_active) > 0:
+        ax1.scatter(frames_active_l, pos_l_active, label="Left Hand Active", color='orange', alpha=1.0)
+    
+    ax1.set_ylabel("Position Y Coordinate (Normalized)")
+    ax1.set_title("Hand Position Profiles with Activity Indication")
+    ax1.legend(loc='upper right')
+    ax1.grid(True)
+    
+    # ---- Bottom Subplot: Velocity Plot ----
+    ax2.plot(frames, vel_r, label="Right Hand Velocity", color='blue')
+    ax2.plot(frames, vel_l, label="Left Hand Velocity", color='orange', linestyle='--')
+    
+    ax2.set_xlabel("Frame")
+    ax2.set_ylabel("Velocity Magnitude")
+    ax2.set_title("Velocity Profiles of Both Hands")
+    ax2.legend(loc='upper right')
+    ax2.grid(True)
+    
+    # Adjust layout and save
+    plt.tight_layout()
+    output_path = f'demo_files/graphics/position_velocity_{pose_filename}.png'
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    plt.savefig(output_path)
+    plt.close()
+    
+    print(f"Combined plot saved at {output_path}")
 
-    plt.figure(figsize=(10, 5))
-    plt.scatter(frames, pos_r, label="Right Hand Velocity")
-    plt.scatter(frames, pos_l, label="Left Hand Velocity", linestyle='--')
+import matplotlib.pyplot as plt
+import numpy as np
+import os
 
+def plot_position_velocity_product(pos_r, pos_l, active_r, active_l, vel_r, vel_l, pos_vel_r, pos_vel_l, pose_filename):
+    """
+    Plot the position, velocity, and their product profiles of both hands in a single figure with three subplots.
+    
+    Parameters:
+    - pos_r (list or np.ndarray): Y positions of the right hand.
+    - pos_l (list or np.ndarray): Y positions of the left hand.
+    - active_r (list or np.ndarray): Boolean flags indicating active frames for the right hand.
+    - active_l (list or np.ndarray): Boolean flags indicating active frames for the left hand.
+    - vel_r (list or np.ndarray): Normalized velocity magnitudes of the right hand.
+    - vel_l (list or np.ndarray): Normalized velocity magnitudes of the left hand.
+    - pos_vel_r (list or np.ndarray): Product of position and velocity for the right hand.
+    - pos_vel_l (list or np.ndarray): Product of position and velocity for the left hand.
+    - pose_filename (str): Filename to save the plot.
+    """
+    frames = np.arange(len(pos_r))
+    
+    # Convert inputs to NumPy arrays for easier indexing
+    pos_r = np.array(pos_r)
+    pos_l = np.array(pos_l)
+    active_r = np.array(active_r)
+    active_l = np.array(active_l)
+    vel_r = np.array(vel_r)
+    vel_l = np.array(vel_l)
+    pos_vel_r = np.array(pos_vel_r)
+    pos_vel_l = np.array(pos_vel_l)
+    
+    # Create a figure with three subplots: position, velocity, and position*velocity
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(14, 15), sharex=True)
+    
+    # ---- Top Subplot: Position Plot ----
+    # Separate active and inactive frames for both hands
+    pos_r_active = pos_r[active_r]
+    frames_active_r = frames[active_r]
+    
+    pos_r_inactive = pos_r[~active_r]
+    frames_inactive_r = frames[~active_r]
+    
+    pos_l_active = pos_l[active_l]
+    frames_active_l = frames[active_l]
+    
+    pos_l_inactive = pos_l[~active_l]
+    frames_inactive_l = frames[~active_l]
+    
+    # Plot inactive points with alpha=0.2
+    if len(pos_r_inactive) > 0:
+        ax1.scatter(frames_inactive_r, pos_r_inactive, label="Right Hand Inactive", color='blue', alpha=0.2)
+    if len(pos_l_inactive) > 0:
+        ax1.scatter(frames_inactive_l, pos_l_inactive, label="Left Hand Inactive", color='orange', alpha=0.2)
+    
+    # Plot active points with alpha=1
+    if len(pos_r_active) > 0:
+        ax1.scatter(frames_active_r, pos_r_active, label="Right Hand Active", color='blue', alpha=1.0)
+    if len(pos_l_active) > 0:
+        ax1.scatter(frames_active_l, pos_l_active, label="Left Hand Active", color='orange', alpha=1.0)
+    
+    ax1.set_ylabel("Position Y Coordinate (Normalized)")
+    ax1.set_title("Hand Position Profiles with Activity Indication")
+    ax1.legend(loc='upper right')
+    ax1.grid(True)
+    
+    # ---- Middle Subplot: Velocity Plot ----
+    ax2.plot(frames, vel_r, label="Right Hand Velocity (Normalized)", color='blue')
+    ax2.plot(frames, vel_l, label="Left Hand Velocity (Normalized)", color='orange', linestyle='--')
+    
+    ax2.set_ylabel("Velocity Magnitude (Normalized)")
+    ax2.set_title("Normalized Velocity Profiles of Both Hands")
+    ax2.legend(loc='upper right')
+    ax2.grid(True)
+    
+    # ---- Bottom Subplot: Position * Velocity Plot ----
+    ax3.plot(frames, pos_vel_r, label="Right Hand Position*Velocity", color='blue')
+    ax3.plot(frames, pos_vel_l, label="Left Hand Position*Velocity", color='orange', linestyle='--')
+    
+    ax3.set_xlabel("Frame")
+    ax3.set_ylabel("Position * Velocity (Normalized)")
+    ax3.set_title("Normalized Position * Velocity Profiles of Both Hands")
+    ax3.legend(loc='upper right')
+    ax3.grid(True)
+    
+    # Adjust layout and save
+    plt.tight_layout()
+    output_path = f'demo_files/graphics/position_velocity_product_{pose_filename}.png'
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    plt.savefig(output_path)
+    plt.close()
+    
+    print(f"Combined plot saved at {output_path}")
+
+
+def plot_position(pos_r, pos_l, active_r, active_l, pose_filename):
+    """
+    Plot the position profiles of both hands with varying transparency based on activity.
+    
+    Parameters:
+    - pos_r (list or np.ndarray): Y positions of the right hand.
+    - pos_l (list or np.ndarray): Y positions of the left hand.
+    - active_r (list or np.ndarray): Boolean flags indicating active frames for the right hand.
+    - active_l (list or np.ndarray): Boolean flags indicating active frames for the left hand.
+    - pose_filename (str): Filename to save the plot.
+    """
+    frames = np.arange(len(pos_r))
+    
+    # Convert inputs to NumPy arrays for easier indexing
+    pos_r = np.array(pos_r)
+    pos_l = np.array(pos_l)
+    active_r = np.array(active_r)
+    active_l = np.array(active_l)
+    
+    # Separate active and inactive frames for both hands
+    pos_r_active = pos_r[active_r]
+    frames_active_r = frames[active_r]
+    
+    pos_r_inactive = pos_r[~active_r]
+    frames_inactive_r = frames[~active_r]
+    
+    pos_l_active = pos_l[active_l]
+    frames_active_l = frames[active_l]
+    
+    pos_l_inactive = pos_l[~active_l]
+    frames_inactive_l = frames[~active_l]
+    
+    # Create the plot
+    plt.figure(figsize=(12, 6))
+    
+    # Plot inactive points with alpha=0.2
+    plt.scatter(frames_inactive_r, pos_r_inactive, label="Right Hand Inactive", color='blue', alpha=0.1)
+    plt.scatter(frames_inactive_l, pos_l_inactive, label="Left Hand Inactive", color='orange', alpha=0.1)
+    
+    # Plot active points with alpha=1
+    plt.scatter(frames_active_r, pos_r_active, label="Right Hand Active", color='blue', alpha=1.0)
+    plt.scatter(frames_active_l, pos_l_active, label="Left Hand Active", color='orange', alpha=1.0)
+    
     plt.xlabel("Frame")
-    plt.ylabel("Position Magnitude")
-    plt.title("Position Profile of Both Hands")
+    plt.ylabel("Position Y Coordinate (Normalized)")
+    plt.title("Hand Position Profiles with Activity Indication")
     plt.legend()
     plt.grid(True)
-    plt.savefig('graphics/position_'+pose_filename+'.png')
+    
+    # Ensure the directory exists
+    output_path = f'demo_files/graphics/position_{pose_filename}.png'
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
+    plt.savefig(output_path)
     plt.close()
+    
+    print(f"Plot saved at {output_path}")
 
 
 def plot_hamer_hand_3d(node_positions, output_file_name):

@@ -11,9 +11,10 @@ import torch
 from scipy.spatial.transform import Rotation as R
 
 from PoseTools.src.modules.features.feature_transformations import pairwise_distance_matrix
-from PoseTools.src.modules.handshapes.utils.graphics import plot_cm
+from PoseTools.src.modules.handshapes.utils.build_references.graphics import plot_cm
 from PoseTools.src.modules.handedness.utils.graphics import read_dict_from_txt
-
+#from PoseTools.src.modules.segmentation.segmentation import main_segmentation
+from tqdm import tqdm
 
 def read_ground_truth_labels(sign_list_file):
     """
@@ -90,6 +91,110 @@ def remove_suffix(string):
     pattern = r'(_\d+)$'
     return re.sub(pattern, '', string)
 
+
+import numpy as np
+
+def aggregate_initial_consecutive_duplicates(handshapes, similarities):
+    """
+    Aggregates the similarity scores for the initial consecutive duplicate handshapes.
+
+    Args:
+        handshapes (list of str): List of top-n handshape names.
+        similarities (list of float): Corresponding similarity scores.
+
+    Returns:
+        tuple: 
+            - new_handshapes (list of str): Updated list with initial duplicates aggregated.
+            - new_similarities (list of float): Updated similarity scores with aggregated values.
+    """
+    if not handshapes or not similarities:
+        return handshapes, similarities
+
+    first_handshape = handshapes[0]
+    sum_similarity = similarities[0]
+    count = 1
+
+    # Iterate over the handshapes starting from the second element
+    for h, s in zip(handshapes[1:], similarities[1:]):
+        if h == first_handshape:
+            sum_similarity += s
+            count += 1
+        else:
+            break  # Stop at the first non-duplicate
+
+    if count > 1:
+        # Aggregate the initial duplicates
+        new_handshapes = [first_handshape] + handshapes[count:]
+        new_similarities = [sum_similarity] + similarities[count:]
+        return new_handshapes, new_similarities
+    else:
+        # No aggregation needed
+        return handshapes, similarities
+
+def calculate_euclidean_distance_with_similarity(pose, reference_poses, n=5):
+    """
+    Calculates the Euclidean distance between a normalized and aligned pose and each reference pose,
+    returning the closest and top `n` closest handshapes along with their similarity percentages.
+
+    Args:
+        pose (np.ndarray): Normalized and aligned pose array of shape (21, 3).
+        reference_poses (dict): Reference poses for comparison.
+            - Keys are handshape names (strings).
+            - Values are lists of reference poses (each a np.ndarray of shape (21, 3)).
+        n (int, optional): Number of top closest handshapes to return. Defaults to 5.
+
+    Returns:
+        tuple: 
+            - closest_handshape (str): The most similar handshape.
+            - top_n_handshapes (list of tuples): List containing tuples of handshape names and their similarity percentages.
+    """
+    distances = []
+    keys = []
+    
+    
+    # Since data is already normalized and view-aligned, proceed directly
+    transformed_pose = pairwise_distance_matrix(pose)  # No transformation needed
+    
+    for key, reference_list in reference_poses.items():
+        idx = -1
+        for reference_pose in reference_list:
+            # Calculate Euclidean distance per node, then take the mean across all nodes
+            distance = np.linalg.norm(transformed_pose - reference_pose, axis=1).mean()
+            distances.append(distance)
+            keys.append(key)  # Assuming keys are already clean; if not, apply remove_suffix
+            idx += 1
+    
+    # Convert lists to numpy arrays for efficient computation
+    distances = np.array(distances)  # Shape: (num_references,)
+    keys = np.array(keys)            # Shape: (num_references,)
+    
+    # Handle cases where distance might be zero to avoid division by zero
+    epsilon = 1e-10
+    distances_safe = distances + epsilon
+    
+    # Convert distances to similarities using inverse distance
+    similarities = 1 / distances_safe  # Higher similarity for smaller distance
+    
+    # Normalize similarities to sum to 100%
+    total_similarity = np.sum(similarities)
+    normalized_similarities = (similarities / total_similarity) * 100
+    
+    
+    # Get indices of the top-n largest similarities
+    sorted_indices = np.argsort(normalized_similarities)[::-1][:n]
+    top_n_keys = keys[sorted_indices]
+    top_n_similarities = normalized_similarities[sorted_indices]
+    
+    
+    # Identify the closest handshape (highest similarity)
+    closest_handshape = top_n_keys[0]
+    
+    # Prepare separate lists for top-n handshapes and their similarities
+    top_n_handshapes = top_n_keys.tolist()
+    similarity_top_n = top_n_similarities.tolist()
+    top_n_handshapes, similarity_top_n = aggregate_initial_consecutive_duplicates(top_n_handshapes, similarity_top_n)
+    
+    return closest_handshape, top_n_handshapes, similarity_top_n, idx
 
 def calculate_euclidean_distance(pose, reference_poses, n=5):
     """
@@ -190,33 +295,46 @@ def preprocess_pose(pose):
     """
     return [torch.tensor(frame, dtype=torch.float32) for frame in pose]
 
+import numpy as np
+import matplotlib
+# Use 'Agg' backend for faster, non-interactive plotting
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # Necessary for 3D plotting
+from tqdm import tqdm
+import imageio
+from collections import Counter
 
-def predict_handshape(keypoints, reference_poses, output_gif_path, filename, gloss_hand, plot=True):
+
+import matplotlib.pyplot as plt
+import numpy as np
+import imageio
+from mpl_toolkits.mplot3d import Axes3D
+
+def plot_pose_3d(
+    keypoints,
+    predictions,
+    output_path,
+    filename,
+    gloss_hand=None,
+    make_fig = False
+):
     """
-    Predicts the handshape label from pose frames and optionally creates a GIF.
+    Plots 3D poses and creates a GIF of the handshape predictions.
 
     Args:
-        keypoints (list): List of pose frames.
-        reference_poses (dict): Reference poses for comparison.
-        output_gif_path (str): Path to save the output GIF.
+        keypoints (np.ndarray): Array of shape [T_frames, N_keypoints, 3] representing 3D coordinates.
+        predictions (dict): Dictionary containing prediction data:
+            - 'closest': List of top-1 predictions per frame.
+            - 'top_n': List of top-n predictions per frame.
+            - 'handedness': List of handedness labels per frame (if gloss_hand is provided).
+            - 'strong': List of strong handshape labels per frame (if gloss_hand is provided).
+            - 'weak': List of weak handshape labels per frame (if gloss_hand is provided).
+        output_path (str): Path to save the output GIF.
         filename (str): Base filename for the output.
-        gloss_hand (dict): Ground truth gloss hand information.
-        plot (bool, optional): Whether to generate plots. Defaults to False.
-
-    Returns:
-        tuple: Median top-1 prediction, top-3 predictions, and top-5 predictions.
+        gloss_hand (dict, optional): Ground truth gloss hand information. Defaults to None.
     """
-    if gloss_hand is not None:
-        handedness = gloss_hand['handedness']
-        weak = gloss_hand['weak']
-        strong = gloss_hand['handshape']
-
-    pred_top1 = []
-    pred_top3 = []
-    pred_top5 = []
-    frames = []
-    idxs = []
-
+    # Define the edges connecting keypoints for plotting
     inward_edges = [
         [1, 0], [2, 1], [3, 2], [4, 3],    # Thumb
         [5, 0], [6, 5], [7, 6], [8, 7],    # Index Finger
@@ -225,83 +343,238 @@ def predict_handshape(keypoints, reference_poses, output_gif_path, filename, glo
         [17, 0], [18, 17], [19, 18], [20, 19]   # Pinky Finger
     ]
 
+    # Define the viewing angles for subplots
     angles = [[0, 0], [30, -30], [30, -60], [90, 90]]
 
-    for frame in keypoints:
-        closest, top_n, idx = calculate_euclidean_distance(frame, reference_poses, n=5)
+    fig = plt.figure(figsize=(10, 8))
+    scatters = []  # List to store scatter plot objects
+    lines = []      # List to store lists of line plot objects
+
+    for idx_angle, angle in enumerate(angles):
+        ax = fig.add_subplot(2, 2, idx_angle + 1, projection='3d')
+
+        # Initialize scatter plot with empty data
+        scatter = ax.scatter([], [], [], c='b', s=10)
+        scatters.append(scatter)
+
+        # Initialize line plots
+        line_plots = []
+        for edge in inward_edges:
+            line, = ax.plot([], [], [], 'r-', linewidth=1)
+            line_plots.append(line)
+        lines.append(line_plots)
+
+        # Set fixed view and limits
+        ax.view_init(elev=angle[0], azim=angle[1])
+        ax.set_zlim(-0.1, 0.02)
+        ax.set_xlim(-0.1, 0.15)
+        ax.set_ylim(-0.1, 0.15)
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        ax.set_title(f"Angle: {angle[0]}°, {angle[1]}°")
+
+    # Initialize the super title as a text object for dynamic updates
+    suptitle_text = fig.suptitle('', fontsize=12)
+
+    frames = []
+
+    # Iterate over each frame with a progress bar
+    for idx, centered_frame in enumerate(tqdm(keypoints, desc="Plotting Frames", unit="frame")):
+        x, y, z = centered_frame[:, 0], centered_frame[:, 1], centered_frame[:, 2]
+
+        # Update scatter plots
+        for scatter in scatters:
+            scatter._offsets3d = (x, y, z)
+
+        # Update line plots
+        for line_plots in lines:
+            for line, edge in zip(line_plots, inward_edges):
+                start, end = edge
+                line.set_data([x[start], x[end]], [y[start], y[end]])
+                line.set_3d_properties([z[start], z[end]])
+
+        # Prepare the super title with current predictions
         if gloss_hand is not None:
+            # Extract ground truth for the current frame
+            handedness = predictions.get('handedness', ['Unknown'])[idx]
+            strong = predictions.get('strong', ['Unknown'])[idx]
+            weak = predictions.get('weak', ['Unknown'])[idx]
+            closest = predictions.get('closest', ['Unknown'])[idx]
+            top_n = predictions.get('top_n', [['Unknown']*5])[idx]
+            suptitle = (
+                f'{filename} - Hnd: {handedness}, Strong: {strong}, Weak: {weak}\n'
+                f'Predicted: {closest}\nTop-3: {top_n[:3]}\nTop-5: {top_n[:5]}'
+            )
+        else:
+            closest = predictions.get('closest', ['Unknown'])[idx]
+            top_n = predictions.get('top_n', [['Unknown']*5])[idx]
+            suptitle = f'{filename} - Predicted: {closest}\nTop-3: {top_n[:3]}\nTop-5: {top_n[:5]}'
+
+        suptitle_text.set_text(suptitle)
+
+        # Draw the updated figure
+        fig.canvas.draw()
+
+        # Convert the figure to a NumPy array
+        image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
+        image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+        # Append the image to frames
+        frames.append(image)
+
+    plt.close(fig)  # Close the figure to free memory
+
+    if make_gif:
+        if frames:
+            imageio.mimsave(output_path, frames, fps=8, loop=0)
+            print('Saved output at', output_path)
+        else:
+            print('No frames to save.')
+    return frames
+
+def predict_handshape(
+    keypoints,
+    reference_poses,
+    output_gif_path,
+    filename,
+    gloss_hand=None,
+    plot=True,
+    boolean_arrays=None
+):
+    """
+    Predicts the handshape label from pose frames and optionally creates a GIF.
+
+    Args:
+        keypoints (np.ndarray): Array of shape [T_frames, N_keypoints, 3] representing 3D coordinates.
+        reference_poses (dict): Reference poses for comparison.
+        output_gif_path (str): Path to save the output GIF.
+        filename (str): Base filename for the output.
+        gloss_hand (dict, optional): Ground truth gloss hand information.
+        plot (bool, optional): Whether to generate plots. Defaults to True.
+        boolean_arrays (np.ndarray, optional): Array indicating specific conditions per frame. Defaults to None.
+
+    Returns:
+        tuple: 
+            - If `gloss_hand` is None: (Counter for top-1 predictions, Counter for top-3 predictions, Counter for top-5 predictions, List of top-1 predictions, List of similarities)
+            - If `gloss_hand` is provided: (Median top-1 prediction, Top-3 predictions list, Top-5 predictions list, Most common index, Last top_n_similarities)
+    """
+    # Extract ground truth details if available
+    if gloss_hand is not None:
+        handedness = gloss_hand.get('handedness', [])
+        weak = gloss_hand.get('weak', [])
+        strong = gloss_hand.get('handshape', [])
+
+    # Initialize prediction counters and storage
+    pred_top1 = []
+    pred_top3 = []
+    pred_top3_list = []
+    pred_top5 = []
+    idxs_list = []
+    similarities = []
+
+    # Prepare predictions dictionary for plotting
+    predictions = {
+        'closest': [],
+        'top_n': []
+    }
+
+    if gloss_hand is not None:
+        predictions['handedness'] = []
+        predictions['weak'] = []
+        predictions['strong'] = []
+
+    # Iterate over each frame with a progress bar
+    for frame_idx, frame in enumerate(tqdm(keypoints, desc="Processing Frames", unit="frame")):
+        # Calculate predictions
+        closest, top_n, top_n_similarities, idx = calculate_euclidean_distance_with_similarity(frame, reference_poses, n=5)
+
+        # Apply boolean conditions if provided
+        if boolean_arrays is not None:
+            if frame_idx < len(boolean_arrays) and boolean_arrays[frame_idx] == 0:
+                closest = 'resting'
+                top_n = ['resting'] * 5
+                top_n_similarities = [0] * 5  # Assuming similarity is 0 for resting
+
+        # Collect predictions
+        if gloss_hand is None:
+            try:
+                similarity_ratio = top_n_similarities[0] / top_n_similarities[1]
+            except (IndexError, ZeroDivisionError):
+                similarity_ratio = 0
+            similarities.append(similarity_ratio)
+            pred_top1.append(closest)
+            pred_top3.extend(top_n[:3])
+            pred_top3_list.append(top_n[:3])
+            pred_top5.extend(top_n[:5])
+            idxs_list.append(idx)
+
+            # Update predictions dictionary for plotting
+            predictions['closest'].append(closest)
+            predictions['top_n'].append(top_n)
+        else:
+            # Ensure gloss_hand lists have sufficient length
+            if frame_idx < len(handedness):
+                current_handedness = handedness[frame_idx]
+            else:
+                current_handedness = 'Unknown'
+
+            if frame_idx < len(weak):
+                current_weak = weak[frame_idx]
+            else:
+                current_weak = 'Unknown'
+
+            if frame_idx < len(strong):
+                current_strong = strong[frame_idx]
+            else:
+                current_strong = 'Unknown'
+
             pred_top1.append(closest)
             pred_top3.extend(top_n[:3])
             pred_top5.extend(top_n[:5])
-            idxs.append(idx)
+            idxs_list.append(idx)
 
-        if plot:
-            centered_frame = frame # - frame[0]  # Center the frame
+            # Update predictions dictionary for plotting
+            predictions['closest'].append(closest)
+            predictions['top_n'].append(top_n)
+            predictions['handedness'].append(current_handedness)
+            predictions['weak'].append(current_weak)
+            predictions['strong'].append(current_strong)
 
-            fig = plt.figure(figsize=(10, 8))
-            for idx_angle, angle in enumerate(angles):
-                ax = fig.add_subplot(2, 2, idx_angle + 1, projection='3d')
+        # Note: Plotting is handled separately
 
-                x, y, z = centered_frame[:, 0], centered_frame[:, 1], centered_frame[:, 2]
-                ax.scatter(x, y, z, c='b', s=20)
+    # After processing all frames, handle plotting
+    if plot:
+        plot_pose_3d(
+            keypoints=keypoints,
+            predictions=predictions,
+            output_path=output_gif_path,
+            filename=filename,
+            gloss_hand=gloss_hand
+        )
 
-                for edge in inward_edges:
-                    start, end = edge
-                    ax.plot(
-                        [x[start], x[end]],
-                        [y[start], y[end]],
-                        [z[start], z[end]],
-                        'r-'
-                    )
-
-                ax.view_init(elev=angle[0], azim=angle[1])
-                ax.set_zlim(-0.1, 0.02)
-                ax.set_xlim(-0.1, 0.15)
-                ax.set_ylim(-0.1, 0.15)
-                ax.set_xlabel('X')
-                ax.set_ylabel('Y')
-                ax.set_zlabel('Z')
-                ax.set_title(f"Angle: {angle[0]}°, {angle[1]}°")
-
-            if gloss_hand is not None:
-                fig.suptitle(
-                    f'{filename} - Hnd: {handedness}, Strong: {strong}, Weak: {weak}\n'
-                    f'Predicted: {closest}\nTop-3: {top_n[:3]}\nTop-5: {top_n[:5]}'
-                )
-            else:   
-                fig.suptitle(f'{filename} - Predicted: {closest}\nTop-3: {top_n[:3]}\nTop-5: {top_n[:5]}')
-            fig.canvas.draw()
-            image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
-            image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-            frames.append(image)
-
-            plt.close(fig)
-
-    if plot and frames:
-        imageio.mimsave(output_gif_path, frames, fps=8, loop = 0)
-
+    # Aggregate predictions using Counters
     counter_top1 = Counter(pred_top1)
-
     counter_top3 = Counter(pred_top3)
     most_common_top3 = counter_top3.most_common(3)
-    
-
     counter_top5 = Counter(pred_top5)
     most_common_top5 = counter_top5.most_common(5)
 
-    
-
+    # Return results based on the presence of ground truth
     if gloss_hand is None:
-        return counter_top1, counter_top3, counter_top5
-    else:   
-        idx = Counter(idxs).most_common(1)[0][0]
-        median_top1 = counter_top1.most_common(1)[0][0]
+        return counter_top1, counter_top3, counter_top5, pred_top1, pred_top3_list, similarities
+    else:
+        # Determine the most common index if needed
+        idx = Counter(idxs_list).most_common(1)[0][0] if idxs_list else None
+        median_top1 = counter_top1.most_common(1)[0][0] if counter_top1 else None
         median_top3 = [item[0] for item in most_common_top3]
         median_top5 = [item[0] for item in most_common_top5]
-        return median_top1, median_top3, median_top5, idx
+        # Assuming you want to return the last top_n_similarities
+        last_top_n_similarities = top_n_similarities if 'top_n_similarities' in locals() else None
+        return median_top1, median_top3, median_top5, idx, last_top_n_similarities
 
 
-def load_and_predict(base_filename, input_folder, output_folder, reference_poses, gloss_hand):
+def load_and_predict(base_filename, input_folder, output_folder, reference_poses, gloss_hand, boolean_arrays = None):
     """
     Loads left and right pose files, performs prediction, and returns the results.
 
@@ -316,13 +589,47 @@ def load_and_predict(base_filename, input_folder, output_folder, reference_poses
         dict: Predictions and poses for both hands.
     """
     predictions = {}
+    top1 = {}
+    top_3 = {}
     poses = {}
     idxs = {}
+    if boolean_arrays is None:
+        bool_L, bool_R = main_segmentation(base_filename)
+    else:
+        bool_L, bool_R = boolean_arrays
+
+    booleans = [bool_L, bool_R]
+
     for suffix in ['-R.pkl', '-L.pkl']:
+        if suffix == '-L.pkl':
+            boolean_arrays = booleans[0]
+            if np.sum(boolean_arrays) == 0:
+                print('Left hand inactive')
+                predicted_class = ['resting' for i in range(len(boolean_arrays))]
+                predictions[suffix] = (predicted_class, predicted_class, predicted_class)
+                top1[suffix] = predicted_class
+                top_3[suffix] = []
+                poses[suffix] = None
+                continue
+        elif suffix == '-R.pkl':
+            boolean_arrays = booleans[1]
+            if np.sum(boolean_arrays) == 0:
+                print('Right hand inactive')
+                predicted_class = ['resting' for i in range(len(boolean_arrays))]
+                predictions[suffix] = (predicted_class, predicted_class, predicted_class)
+                top1[suffix] = predicted_class
+                top_3[suffix] = []
+                poses[suffix] = None
+                continue
+            print('Right:', np.sum(boolean_arrays))
+
         file_path = os.path.join(input_folder, base_filename + suffix)
         if not os.path.exists(file_path):
+
             print(f"File not found: {file_path}")
             continue
+
+        print(f"Processing file: {file_path}")
         
         if gloss_hand is None: handshape = base_filename
         else: handshape = gloss_hand['handshape']
@@ -352,29 +659,34 @@ def load_and_predict(base_filename, input_folder, output_folder, reference_poses
             continue
 
         if gloss_hand is None:
-            predicted_class, top3, top5= predict_handshape(
+            predicted_class, top3, top5, pred_top1, pred_top3, similarity = predict_handshape(
                 keypoints=pose,
                 reference_poses=reference_poses,
                 output_gif_path=output_gif_path,
                 filename=base_filename,
                 gloss_hand=gloss_hand,
-                plot=True
+                plot=False,
+                boolean_arrays = boolean_arrays
             )
-
+            
         else: 
-            predicted_class, top3, top5, idx = predict_handshape(
+            predicted_class, top3, top5, idx, similarity = predict_handshape(
                 keypoints=pose,
                 reference_poses=reference_poses,
                 output_gif_path=output_gif_path,
                 filename=base_filename,
                 gloss_hand=gloss_hand,
-                plot=False
+                plot=False,
+                boolean_arrays = boolean_arrays
             )
-            predictions[suffix] = (predicted_class, top3, top5)
-            poses[suffix] = pose
-            idxs[suffix[1]] = idx
 
-    return predictions, poses, idxs
+        predictions[suffix] = (predicted_class, top3, top5)
+        poses[suffix] = pose
+        top1[suffix] = pred_top1
+        top_3[suffix] = pred_top3
+
+    return predictions, poses, idxs, top1, top_3, similarity
+
 
 
 def update_counters(side, pred, top3, top5, ground_truth, counts, base_filename, handedness, strong=None, weak=None):
@@ -576,6 +888,7 @@ def process_directory(input_folder, output_folder, ground_truth_labels, referenc
         'pred': [],
         'poses': {}
     }
+    prediction_arrays = {}
     total_files = 0
 
     # Collect base filenames without suffixes
@@ -591,13 +904,15 @@ def process_directory(input_folder, output_folder, ground_truth_labels, referenc
         if not gloss_hand or gloss_hand['hs_change'] != '-1':
             continue
 
-        predictions, poses, idxs = load_and_predict(
+        predictions, poses, idxs, pred_top1, similarity = load_and_predict(
             base_filename=base_filename,
             input_folder=input_folder,
             output_folder=output_folder,
             reference_poses=reference_poses,
             gloss_hand=gloss_hand
         )
+        prediction_arrays[base_filename] = pred_top1
+
 
         if not predictions:
             continue
@@ -642,7 +957,7 @@ def process_directory(input_folder, output_folder, ground_truth_labels, referenc
         print(f"Class {handshape_class}: {total_count}")
 
 
-def inference_directory(input_folder, output_folder, reference_poses):
+def inference_directory(input_folder, output_folder, reference_poses, boolean_arrays, base_filename=None):
     """
     Processes all .pkl files in the input directory, predicts handshapes, and evaluates accuracy.
 
@@ -660,23 +975,40 @@ def inference_directory(input_folder, output_folder, reference_poses):
     total_files = 0
 
     # Collect base filenames without suffixes
-    base_filenames = set()
-    for filename in os.listdir(input_folder):
-        if filename.endswith('.pkl'):
-            base_filename = filename[:-6]
-            base_filenames.add(base_filename)
+    if base_filename is not None:
+        base_filenames = set([base_filename])
+        
+    else:
+        base_filenames = set()
+        for filename in os.listdir(input_folder):
+            if filename.endswith('.pkl'):
+                base_filename = filename[:-6]
+                base_filenames.add(base_filename)
 
     base_filenames = sorted(base_filenames)
+    predicted_arrays = {}
+    predicted_arrays_3 = {}
     for base_filename in base_filenames:
-
-        predictions, poses, idxs = load_and_predict(
+        
+        predictions, poses, idxs, pred_top1, pred_top3, similarity = load_and_predict(
             base_filename=base_filename,
             input_folder=input_folder,
             output_folder=output_folder,
             reference_poses=reference_poses,
-            gloss_hand=None
+            gloss_hand=None,
+            boolean_arrays=boolean_arrays
         )
-    return predictions
+    for item in pred_top1:
+        if 'normalized_' in base_filename:
+            base_filename = base_filename.replace('normalized_', '')
+        predicted_arrays[base_filename+item] = pred_top1[item]
+        
+    for item in pred_top3:
+        if 'normalized_' in base_filename:
+            base_filename = base_filename.replace('normalized_', '')    
+        predicted_arrays_3[base_filename+item] = pred_top3[item]
+    
+    return predicted_arrays, predicted_arrays_3, similarity 
 
 
 
@@ -708,10 +1040,10 @@ def main(args):
 
 
 
-def main_handshape(input_folder, output_folder, ground_truth_labels = None):
+def main_handshape(input_folder, output_folder, ground_truth_labels = None, boolean_arrays = None, base_filename = None):
     gloss_mapping = read_dict_from_txt('/home/gomer/oline/PoseTools/data/metadata/output/global_value_to_id.txt')
     # Load reference poses
-    reference_pose_path = '/home/gomer/oline/PoseTools/src/modules/handshapes/utils/references/reference_poses_pdm_extended_uva.pkl'
+    reference_pose_path = '/home/gomer/oline/PoseTools/src/modules/handshapes/utils/build_references/references/reference_poses_pdm_extended_uva.pkl'
     with open(reference_pose_path, 'rb') as file:
         reference_poses = pickle.load(file)
     
@@ -728,10 +1060,12 @@ def main_handshape(input_folder, output_folder, ground_truth_labels = None):
         predictions = inference_directory(
             input_folder=input_folder,
             output_folder=output_folder,
-            reference_poses=reference_poses
+            reference_poses=reference_poses,
+            boolean_arrays=boolean_arrays,
+            base_filename=base_filename
         )
-        print('Pedictions: ', predictions)
-        print(len(predictions))
+
+        return predictions
     else:
         process_directory(
             input_folder=input_folder,
@@ -740,6 +1074,7 @@ def main_handshape(input_folder, output_folder, ground_truth_labels = None):
             reference_poses=reference_poses,
             device=device
         )
+    
 
 
 

@@ -137,6 +137,7 @@ class BuildReferencePose:
         # Loop through each row and group poses by 'gloss' (handshape class)
         for index, row in tqdm(df.iterrows(), total=len(df), desc="Processing rows", unit="row"):
             video_id = row['video_id']
+            
             handshape = row['Handshape']
             filepath = os.path.join(self.pose_dir, f"{video_id}.pkl")
             
@@ -144,6 +145,7 @@ class BuildReferencePose:
                 with open(filepath, 'rb') as f:
                     data_dict = pickle.load(f)
             except FileNotFoundError:
+                print(f"File not found: {filepath}")
                 continue    
             
             # Extract keypoints data
@@ -152,12 +154,15 @@ class BuildReferencePose:
             # Preprocess the data if predefined poses are provided
             if self.predefined_poses is not None:
                 data = self.preprocess(data, handshape)
-            
+            print(data)
             if data is None:
                 continue
             
             # Average across time steps (axis=0), resulting in [n_nodes, spatial_dims]
             avg_pose = data.mean(axis=0)
+            
+            print('!!!!!!!!!!!!!!!!!!!!!!!!!!')
+            print('Average pose', avg_pose.shape)
             avg_pose_pdm = self.pairwise_distance_matrix(avg_pose)
             
             # Get the handshape class (gloss)
@@ -183,6 +188,7 @@ class BuildReferencePose:
             total_poses += len(poses)
 
         for gloss, poses in self.pose_dict.items():
+            
             poses = np.array(poses)
             avg_class_pose = poses.mean(axis=0)
             self.reference_poses[gloss] = [np.array(avg_class_pose)]  # Initialize as a list with the avg pose as the first element
@@ -329,7 +335,7 @@ def add_json_to_reference_pdms(reference_pdms, dir_pdms):
 if __name__ == "__main__":
     # Load pose data 
     json_file_path = '/home/gomer/oline/PoseTools/data/metadata/output/50c/50c_uva.json'
-    pose_dir = '../../../../mnt/fishbowl/gomer/oline/sb_uva/hamer_pkl'
+    pose_dir = '../../../../mnt/fishbowl/gomer/oline/sb_uva/hamer'
     df = json_to_dataframe(json_file_path)
     df = df[df['Sign Type'] == '2s']
     print(len(df))
@@ -359,12 +365,14 @@ if __name__ == "__main__":
         predefined_poses = reference_pdms
 
         if i == num_iterations:
-            output_path = f'/home/gomer/oline/PoseTools/src/modules/handshapes/utils/references/iteration_{i}_pdm_uva.png'
+            output_path = f'/home/gomer/oline/PoseTools/src/modules/handshapes/utils//build_references/references/iteration_{i}_pdm_uva.png'
             
-            save_path = f'/home/gomer/oline/PoseTools/src/modules/handshapes/utils/references/reference_poses_pdm_extended_uva.pkl'
+            save_path_pdm = f'/home/gomer/oline/PoseTools/src/modules/handshapes/utils/build_references/references/reference_poses_pdm.pkl'
+            save_path_raw = f'/home/gomer/oline/PoseTools/src/modules/handshapes/utils/build_references/references/reference_poses_raw.pkl'
+
             if add_detailed:
-                dir_pdms = '/home/gomer/oline/PoseTools/src/modules/handshapes/utils/finals/pdm'
-                keys_to_drop = ['5m','5m_closed','W', 'V', 'Baby_O',
+                dir_pdms = '/home/gomer/oline/PoseTools/src/modules/handshapes/utils/build_references/reference_data/finals/pdm'
+                keys_to_drop = ['5m','5m_closed','W', 'V', 'Baby_O', 'T_open' , 'O',
                                  'Baby_beak', 'Baby_beak_open', 'Beak_open_spread', 'Beak_open', 'Beak_spread', 
                                  'N','M', '5r', 'Y', 'I', 'L', '1', '1_curved', '3', '4', '5', '5r' , 'A', 'B', 'C', 'C_spread', 'S', 'Baby_C' 'Y', 'V_curved']
 
@@ -372,17 +380,27 @@ if __name__ == "__main__":
                 for key in keys_to_drop:
                     reference_pdms.pop(key, None)  # pop removes the key if it exists, and does nothing if it doesn't
                 add_json_to_reference_pdms(reference_pdms, dir_pdms)
+                '''print('\nPDMs:')
                 for key, poses in reference_pdms.items():
+                    print(f"Key: {key}")
+                    for i, pose in enumerate(poses):
+                        # Assuming each pose is a numpy array, you can use `.shape`
+                        # Otherwise, replace `.shape` with a suitable method to get the data structure's dimensions
+                        print(f"  PDM {i + 1} shape: {pose.shape if hasattr(pose, 'shape') else 'Shape not available'}")
+                '''
+                print('\nPoses:')
+                for key, poses in reference_poses.items():
                     print(f"Key: {key}")
                     for i, pose in enumerate(poses):
                         # Assuming each pose is a numpy array, you can use `.shape`
                         # Otherwise, replace `.shape` with a suitable method to get the data structure's dimensions
                         print(f"  Pose {i + 1} shape: {pose.shape if hasattr(pose, 'shape') else 'Shape not available'}")
 
-                print(reference_pdms.keys())
-                # List of keys to drop
-                
-            print(reference_pdms.keys())
-            with open(save_path, 'wb') as file:
+            with open(save_path_pdm, 'wb') as file:
                 pickle.dump(reference_pdms, file)
+            with open(save_path_raw, 'wb') as file:
+                pickle.dump(reference_poses, file)
+            
+            
+                
             #plot_multiple_hands_from_dict(reference_poses, output_path=output_path)

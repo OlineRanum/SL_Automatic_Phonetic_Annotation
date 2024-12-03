@@ -24,10 +24,37 @@ def get_masked_arr(pose, conf):
     pose = np.ma.masked_equal(pose * conf, 0)  # Mask positions where values are 0
     return pose, conf
 
+import numpy as np
+
+def get_nan_arr(pose, conf):
+    """
+    Replace positions in the pose array where the confidence-adjusted value is zero with np.nan.
+    
+    Parameters:
+    - pose (np.ndarray): Array of pose keypoints, shape [T, K, 3]
+    - conf (np.ndarray): Confidence scores, needs to be reshaped to align with pose
+    
+    Returns:
+    - pose_nan (np.ndarray): Pose array with zeros replaced by np.nan
+    - conf (np.ndarray): Reshaped confidence scores
+    """
+    # Reshape confidence scores to match pose dimensions
+    conf = np.reshape(conf, (conf.shape[0], conf.shape[2], conf.shape[1]))
+    
+    # Multiply pose by confidence to zero out low-confidence keypoints
+    pose_conf = pose * conf
+    
+    # Replace zero values with np.nan
+    pose_nan = np.where(pose_conf == 0, np.nan, pose_conf)
+    
+    return pose_nan, conf
+
+
 def get_normalized_coord(com, axis = 1):
     """ Recenter the coordinates to zero and flip the y-axis
     """
-    return -com[:,axis] - np.min(-com[:,axis])
+#    return -com[:,axis] - np.min(-com[:,axis])
+    return abs(com[:,axis] - com[0,axis])
 
 
 def extract_names_from_filtered_file(filtered_file_path):
