@@ -1,4 +1,4 @@
-from pose_format import Pose
+#from pose_format import Pose
 import numpy.ma as ma
 import numpy as np
 import pickle, os, json

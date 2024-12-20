@@ -169,6 +169,6 @@ def get_unique_glosses_per_label(clusters_to_glosses, selected_labels):
     
     for key, item in selected_clusters_glosses.items():
         print(f"Cluster {key} built on {len(item)} videos.")
-        print(item)
+        print(set(item))
 
     return selected_clusters_glosses

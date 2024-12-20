@@ -10,7 +10,7 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation as R
 
-from PoseTools.src.modules.features.feature_transformations import pairwise_distance_matrix
+from PoseTools.src.modules.features.feature_transformations import DistanceFeatures, MaskFeatures
 from PoseTools.src.modules.handshapes.utils.build_references.graphics import plot_cm
 from PoseTools.src.modules.handedness.utils.graphics import read_dict_from_txt
 #from PoseTools.src.modules.segmentation.segmentation import main_segmentation
@@ -131,7 +131,7 @@ def aggregate_initial_consecutive_duplicates(handshapes, similarities):
         # No aggregation needed
         return handshapes, similarities
 
-def calculate_euclidean_distance_with_similarity(pose, reference_poses, n=5, transformation = 'pdm'):
+def calculate_euclidean_distance_with_similarity(pose, reference_poses, n=5, args = None):
     """
     Calculates the Euclidean distance between a normalized and aligned pose and each reference pose,
     returning the closest and top `n` closest handshapes along with their similarity percentages.
@@ -150,13 +150,18 @@ def calculate_euclidean_distance_with_similarity(pose, reference_poses, n=5, tra
     """
     distances = []
     keys = []
-    
+    transformation=args.feature_transformation
+    mask_type = args.mask_type
     
     # Since data is already normalized and view-aligned, proceed directly
     # TODO: FIX this
     if transformation == 'pdm':
-        transformed_pose = pairwise_distance_matrix(pose)  # No transformation needed
+        feature_extractor = DistanceFeatures()
+        transformed_pose = feature_extractor.pairwise_distance_matrix(pose)  # No transformation needed
         orientations = False
+        if mask_type is not None:
+            masker = MaskFeatures(mask_type)
+            transformed_pose = masker.mask_features(transformed_pose)
     if transformation == 'orientation':
         transformed_pose = pose
         orientations = True
@@ -451,7 +456,7 @@ def predict_handshape(
     gloss_hand=None,
     plot=True,
     boolean_arrays=None,
-    transformation = 'pdm'
+    args = None
 ):
     """
     Predicts the handshape label from pose frames and optionally creates a GIF.
@@ -505,7 +510,7 @@ def predict_handshape(
             top_n_similarities = [0] * 5
             idx = None
         # Calculate predictions
-        closest, top_n, top_n_similarities, idx = calculate_euclidean_distance_with_similarity(frame, reference_poses, n=5, transformation = transformation)
+        closest, top_n, top_n_similarities, idx = calculate_euclidean_distance_with_similarity(frame, reference_poses, n=5, args = args)
 
         # Apply boolean conditions if provided
         if boolean_arrays is not None:
@@ -592,7 +597,7 @@ def predict_handshape(
         return median_top1, median_top3, median_top5, idx, last_top_n_similarities
 
 
-def load_and_predict(data, base_filename, input_folder, output_folder, reference_poses, gloss_hand, booleans = None, transformation = 'pdm'):
+def load_and_predict(data, base_filename, input_folder, output_folder, reference_poses, gloss_hand, booleans = None, args= None):
     """
     Loads left and right pose files, performs prediction, and returns the results.
 
@@ -661,7 +666,7 @@ def load_and_predict(data, base_filename, input_folder, output_folder, reference
             gloss_hand=gloss_hand,
             plot=False,
             boolean_arrays = booleans[idx],
-            transformation=transformation
+            args = args
         )
   
         predictions[suffix] = (predicted_class, top3, top5)
@@ -942,7 +947,7 @@ def process_directory(input_folder, output_folder, ground_truth_labels, referenc
         print(f"Class {handshape_class}: {total_count}")
 
 
-def inference_directory(data, input_folder, output_folder, reference_poses, boolean_arrays, base_filename=None, transformation = 'pdm'):
+def inference_directory(data, input_folder, output_folder, reference_poses, boolean_arrays, base_filename=None, args = None):
     """
     Processes all .pkl files in the input directory, predicts handshapes, and evaluates accuracy.
 
@@ -964,7 +969,7 @@ def inference_directory(data, input_folder, output_folder, reference_poses, bool
         reference_poses=reference_poses,
         gloss_hand=None,
         booleans=boolean_arrays,
-        transformation=transformation
+        args = args
     )
 
     for item in pred_top1:
@@ -1009,7 +1014,8 @@ def main(args):
 
 
 
-def main_handshape(data, input_folder, output_folder, boolean_arrays = None, base_filename = None, transformation = 'pdm'):
+def main_handshape(data, input_folder, output_folder, boolean_arrays = None, base_filename = None, args = None):
+
     reference_poses = data.reference_poses
    
     # Ensure output directory exists
@@ -1024,7 +1030,7 @@ def main_handshape(data, input_folder, output_folder, boolean_arrays = None, bas
         reference_poses=reference_poses,
         boolean_arrays=boolean_arrays,
         base_filename=base_filename,
-        transformation=transformation
+        args=args
     )
     return predictions
     

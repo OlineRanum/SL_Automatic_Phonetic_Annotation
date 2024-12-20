@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 from matplotlib.gridspec import GridSpec
 import numpy as np
 import cv2
@@ -8,9 +7,10 @@ import os, glob
 import traceback
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 from PoseTools.src.modules.old_segmentation.detect_transitions import label_smoothing_and_transitions
-from matplotlib.animation import PillowWriter
+
 from PoseTools.src.modules.handedness.utils.graphics import PosePlotter
-import time
+
+from PoseTools.src.modules.features.feature_transformations import DistanceFeatures, MaskFeatures
 
 import matplotlib
 matplotlib.use('Agg')  # Use the non-interactive Agg backend for rendering
@@ -18,6 +18,9 @@ matplotlib.use('Agg')  # Use the non-interactive Agg backend for rendering
 class PhoneticAnnotationPlot:
     def __init__(self, data,  sign_activity_arrays, boolean_activity_arrays, handshapes=None, handedness=None, orientations = None, locations = None, save_frames= True):
         # Initialization code
+        self.feature_extractor = DistanceFeatures()
+        self.masker = MaskFeatures(mask_type='gomer')
+
         self.base_path = data.BASE_DIR
         self.left_wrist_activity, self.right_wrist_activity = sign_activity_arrays
 
@@ -60,6 +63,8 @@ class PhoneticAnnotationPlot:
                 self.handshapes_L_top3 = self.handshapes_top3[0][self.base_filename + '-L.pkl']
 
             self.handshapes_R = self.handshapes[self.base_filename + '-R.pkl']
+            print(self.handshapes_R)
+            
             self.handshapes_L = self.handshapes[self.base_filename + '-L.pkl']
             self.handshapes_R = label_smoothing_and_transitions(self.handshapes_R)
             self.handshapes_L = label_smoothing_and_transitions(self.handshapes_L)
@@ -76,7 +81,7 @@ class PhoneticAnnotationPlot:
         self.gif_frames = []
         self.frames = data.frames
         # Directory to save frames
-        self.frames_dir = os.path.join(self.base_path[:-21], 'src','modules','server', 'public', 'frames')
+        self.frames_dir = os.path.join(self.base_path[:-21], 'src','server', 'public', 'frames')
 
         if self.base_filename:
             self.frames_dir = os.path.join(self.frames_dir, self.base_filename)
@@ -123,7 +128,7 @@ class PhoneticAnnotationPlot:
     def _initialize_figure(self):
         """Initialize the figure and axes for the animation."""
         self.fig = plt.figure(figsize=(18, 14))
-        gs = GridSpec(4, 4, width_ratios=[4, 2, 2, 2], figure=self.fig, wspace=0.25, hspace=0.25)
+        gs = GridSpec(4, 5, width_ratios=[3, 2 , 2, 2, 3], figure=self.fig, wspace=0.5, hspace=0.5)
 
         # Video Frame
         ax_video = self.fig.add_subplot(gs[0:2, 0])
@@ -131,7 +136,7 @@ class PhoneticAnnotationPlot:
         self.axes['video'] = ax_video
 
         # Textbox
-        ax_textbox = self.fig.add_subplot(gs[2:, 0:2])
+        ax_textbox = self.fig.add_subplot(gs[2:, :2])
         ax_textbox.axis('off')
         self.axes['textbox'] = ax_textbox
         self.textbox = ax_textbox.text(
@@ -144,7 +149,7 @@ class PhoneticAnnotationPlot:
 
         # Wrist Movement Plots
         # Position Plot
-        ax_plot_pos = self.fig.add_subplot(gs[0, 2:])
+        ax_plot_pos = self.fig.add_subplot(gs[2, 2:4])
         ax_plot_pos.set_title('Wrist Movement - Position')
         ax_plot_pos.set_xlabel('Frame Index')
         ax_plot_pos.set_ylabel('Normalized Movement')
@@ -154,7 +159,7 @@ class PhoneticAnnotationPlot:
         self.axes['plot_pos'] = ax_plot_pos
 
         # Velocity Plot
-        ax_plot_vel = self.fig.add_subplot(gs[1, 2:])
+        ax_plot_vel = self.fig.add_subplot(gs[3, 2:4])
         ax_plot_vel.set_title('Wrist Movement - Velocity')
         ax_plot_vel.set_xlabel('Frame Index')
         ax_plot_vel.set_ylabel('Velocity')
@@ -195,12 +200,12 @@ class PhoneticAnnotationPlot:
             [17, 0], [18, 17], [19, 18], [20, 19] # Pinky Finger
         ]
 
-        ax_skeleton = self.fig.add_subplot(gs[0, 1])  # Rows 1 to end, Column 0
+        ax_skeleton = self.fig.add_subplot(gs[2, 4])  
         ax_skeleton.set_title('Mediapipe Skeleton')
         ax_skeleton.axis('off')  # Optional: hide axes if not needed
         self.axes['skeleton'] = ax_skeleton
 
-        ax_skeleton_side = self.fig.add_subplot(gs[1, 1])  # Rows 1 to end, Column 0
+        ax_skeleton_side = self.fig.add_subplot(gs[3, 4]) 
         ax_skeleton_side.set_title('Mediapipe Skeleton')
         ax_skeleton_side.axis('off')  # Optional: hide axes if not needed
         self.axes['skeleton_side'] = ax_skeleton_side
@@ -211,7 +216,7 @@ class PhoneticAnnotationPlot:
         self.lines_pose_R_list = []
         for idx_angle, angle in enumerate(self.angles):
             col =  idx_angle + 1
-            ax = self.fig.add_subplot(gs[2, col], projection='3d')
+            ax = self.fig.add_subplot(gs[0, col], projection='3d')
             ax.set_title(f'Right Hand Angle {idx_angle+1}')
             scatter = ax.scatter([], [], [], c='b', s=20)
             lines = []
@@ -233,7 +238,7 @@ class PhoneticAnnotationPlot:
         self.lines_pose_L_list = []
         for idx_angle, angle in enumerate(self.angles):
             col = idx_angle + 1
-            ax = self.fig.add_subplot(gs[3, col], projection='3d')
+            ax = self.fig.add_subplot(gs[1, col], projection='3d')
             ax.set_title(f'Left Hand Angle {idx_angle+1}')
             scatter = ax.scatter([], [], [], c='g', s=20)
             lines = []
@@ -262,6 +267,19 @@ class PhoneticAnnotationPlot:
             'right_inactive': ([], []),
             'right_active': ([], [])
         }
+
+
+        # Create bar plots
+        ax_bar_plot_0 = self.fig.add_subplot(gs[0, 4])
+        ax_bar_plot_0.set_title('Parwise distance Right Hand')
+        self.axes['bar_plot_right'] = ax_bar_plot_0
+
+        ax_bar_plot_1 = self.fig.add_subplot(gs[1, 4])
+        ax_bar_plot_1.set_title('Parwise distance Left Hand')
+        self.axes['bar_plot_left'] = ax_bar_plot_1
+
+
+
         #self.fig.tight_layout()
         self.fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05, wspace=0.1, hspace=0.1)
         plt.ioff()
@@ -363,6 +381,7 @@ class PhoneticAnnotationPlot:
             ([x_R[start], x_R[end]], [y_R[start], y_R[end]], [z_R[start], z_R[end]])
             for start, end in self.inward_edges
         ]
+
         for scatter, lines in zip(self.scatter_pose_R_list, self.lines_pose_R_list):
             scatter._offsets3d = (x_R, y_R, z_R)
             # Efficiently update lines
@@ -389,40 +408,110 @@ class PhoneticAnnotationPlot:
                 for line, segment in zip(lines, line_segments):
                     line.set_data(segment[:2])
                     line.set_3d_properties(segment[2])
-        #stop = time.time()
-        #print(f"Time taken to plot left hand: {stop - start:.2f} seconds")
-        # Plot the skeleton for the current frame
-        #self.axes['skeleton'].clear()
-        #start = time.time()
+
         self.pose_parser.plot_mp_skeleton(
             pose,
             ax=self.axes['skeleton']
         )
         
         self.axes['skeleton'].set_title('Mediapipe Skeleton')
-        #stop = time.time()
-        #print(f"Time taken to plot skeleton: {stop - start:.2f} seconds")
-        #self.axes['skeleton_side'].clear()
-        #start = time.time() 
+
         self.pose_parser.plot_mp_skeleton(
             pose,
             ax=self.axes['skeleton_side'],
             mode = 'yz'
             
         )
-        #stop = time.time()
-        #print(f"Time taken to: {stop - start:.2f} seconds")
-        
 
-        # Save Frame if Required
-        #start = time.time()
+        # Update bar plots
+        
+        pdm_L = self.feature_extractor.pairwise_distance_matrix(current_keypoint_L)
+        pdm_R = self.feature_extractor.pairwise_distance_matrix(current_keypoint_R)  
+        
+                # Define finger indices
+        WRIST_BASE = 0
+        THUMB = [1, 2, 3, 4]
+        INDEX = [5, 6, 7, 8]
+        MIDDLE = [9, 10, 11, 12]
+        RING = [13, 14, 15, 16]
+        PINKY = [17, 18, 19, 20]
+
+        fingers = [THUMB, INDEX, MIDDLE, RING, PINKY]
+
+        # Calculate distances for each category
+        categories_L = []
+        categories_R = []
+
+        for finger in fingers:
+            # Base-Wrist
+            categories_L.append(pdm_L[finger[0], WRIST_BASE])
+            categories_R.append(pdm_R[finger[0], WRIST_BASE])
+
+            # Base-Tip
+            categories_L.append(pdm_L[finger[0], finger[-1]])
+            categories_R.append(pdm_R[finger[0], finger[-1]])
+
+            # Base-Middle 2
+            categories_L.append(pdm_L[finger[0], finger[2]])
+            categories_R.append(pdm_R[finger[0], finger[2]])
+
+            # Wrist-Tip
+            categories_L.append(pdm_L[WRIST_BASE, finger[-1]])
+            categories_R.append(pdm_R[WRIST_BASE, finger[-1]])
+
+        # Convert distances into bar plot format
+        bar_width = 0.2
+        y = np.arange(len(fingers))  # Indices for fingers (THUMB, INDEX, etc.)
+        categories = ['Base-Wrist', 'Base-Tip', 'Base-Middle', 'Wrist-Tip']
+
+        # Define colors for the new palette
+        colors = ['#FF6F61', '#6B5B95', '#88B04B',  '#F7CAC9']
+
+        # Create grouped horizontal bar plots
+        ax_bar_plot_0 = self.axes['bar_plot_right']
+        ax_bar_plot_0.clear()
+        ax_bar_plot_0.set_title('Right Hand Feature Distances', fontsize=14)
+        ax_bar_plot_0.set_xlim(0, max(categories_R) * 1.1)
+        ax_bar_plot_0.set_xlabel('Distance', fontsize=12)
+        ax_bar_plot_0.set_yticks(y)
+        ax_bar_plot_0.set_yticklabels(['Thumb', 'Index', 'Middle', 'Ring', 'Pinky'])
+
+        for i, category in enumerate(categories):
+            ax_bar_plot_0.barh(y - 2 * bar_width + i * bar_width, categories_R[i::4], bar_width, color=colors[i], label=category)
+
+        legend = ax_bar_plot_0.legend(
+            fontsize=10,
+            loc='upper left',  # Place the legend at the top-right corner of the plot
+            bbox_to_anchor=(1.01, 1.0),  # Adjust placement slightly further to the right
+            ncol=1,  # Keep one column so each rotated label stacks correctly
+            frameon=False  # Optional: remove the legend box frame
+        )
+
+        for text in legend.get_texts():
+            text.set_rotation(90)  # Rotate text vertically
+            text.set_verticalalignment('bottom')  # Align text properly
+
+        ax_bar_plot_1 = self.axes['bar_plot_left']
+        ax_bar_plot_1.clear()
+        ax_bar_plot_1.set_title('Left Hand Feature Distances', fontsize=14)
+        ax_bar_plot_1.set_xlim(0, max(categories_L) * 1.1)
+        ax_bar_plot_1.set_xlabel('Distance', fontsize=12)
+        ax_bar_plot_1.set_yticks(y)
+        ax_bar_plot_1.set_yticklabels(['Thumb', 'Index', 'Middle', 'Ring', 'Pinky'])
+
+        for i, category in enumerate(categories):
+            ax_bar_plot_1.barh(y - 2 * bar_width + i * bar_width, categories_L[i::4], bar_width, color=colors[i], label=category)
+
+        #ax_bar_plot_1.legend(fontsize=10)
+
+        
         if self.save_frames:
             frame_filename = f"frame_{idx:04d}.png"
             
             frame_path = os.path.join(self.frames_dir, frame_filename)
             self.fig.savefig(frame_path, pad_inches=0)
-        #stop = time.time()  
-        #print(f"Time taken to save frame: {stop - start:.2f} seconds")
+        
+        
         return []
 
     
@@ -526,7 +615,6 @@ class PhoneticAnnotationPlot:
 
 
 def main_visualization(data, save_anim_path=None,sign_activity_arrays = None, boolean_activity_arrays = None, handshapes=None, handedness=None, orientations = None, locations = None, fps = 5):
-        
         if save_anim_path:
             animator = PhoneticAnnotationPlot(data, sign_activity_arrays, boolean_activity_arrays, handshapes = handshapes, handedness = handedness, orientations = orientations, locations = locations)
             animator.create_animation(save_path=save_anim_path, fps=fps)
