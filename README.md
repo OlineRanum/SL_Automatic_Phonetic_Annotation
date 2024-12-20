@@ -27,10 +27,12 @@ Currently do not have an environment for the repository ready - please refer to 
 
 This repository contains code to process poses, with functionalities for automatically annotating phonetic attributes of sign languages.
 
-## Processors
+## Data Processing
 
-### Process mp4 file full (inc. hamer extraction, mediapipe extraction and labeling)
+### Process mp4 file full (inc. HaMer 3D handshape extraction, SMPLer-x 3D full-pose extraction and labeling)
 ```
+cd /home/gomer/oline/PoseTools/src/modules/data
+./extract_data.sh
 ```
 ### Pose Constructors and Format Converters 
 #### Hamer 3D-Handshape pose estimation
