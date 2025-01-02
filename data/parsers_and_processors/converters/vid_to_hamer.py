@@ -1,53 +1,10 @@
 import cv2
 import requests
 import json
-import sys
-import tempfile
 import os
-from tqdm import tqdm
 import numpy as np
-import matplotlib.pyplot as plt
-import json
-import os
-from PIL import Image
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.signal import butter, filtfilt
-import subprocess
-import sys
-import argparse
-import os
-import torch
-import omegaconf
-
-
-Here’s how we can update the script to address your requirements:
-
-Update the Imports to Use the PoseTools Package from the Specified Path:
-Add the PoseTools directory to the Python path dynamically.
-Process Only the Input Video File:
-Replace the logic that processes all .mp4 files in the directory with logic to process only the specified video file.
-Here’s the updated script:
-
-python
-Copy code
-import sys
-import os
-import cv2
-import requests
-import json
-import numpy as np
-from tqdm import tqdm
-from PIL import Image
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.signal import butter, filtfilt
-
-# Add PoseTools package to Python path
-POSETOOLS_PATH = "/home/gomer/oline/PoseTools"
-sys.path.append(POSETOOLS_PATH)
-
-from src.models.gca.preprocessing.hamer_utils import ManoForwardKinematics
-from data.parsers_and_processors.datamanagment import FileConverters
-fc = FileConverters()
+from PoseTools.data.utils_data.hamer_utils import ManoForwardKinematics
+from PoseTools.data.parsers_and_processors.datamanagment import FileConverters
 
 
 

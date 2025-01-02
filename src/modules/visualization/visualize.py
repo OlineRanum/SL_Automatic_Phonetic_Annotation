@@ -6,7 +6,7 @@ from tqdm import tqdm
 import os, glob
 import traceback
 from matplotlib.animation import FuncAnimation, FFMpegWriter
-from PoseTools.src.modules.old_segmentation.detect_transitions import label_smoothing_and_transitions
+
 
 from PoseTools.src.modules.handedness.utils.graphics import PosePlotter
 
@@ -66,8 +66,8 @@ class PhoneticAnnotationPlot:
             print(self.handshapes_R)
             
             self.handshapes_L = self.handshapes[self.base_filename + '-L.pkl']
-            self.handshapes_R = label_smoothing_and_transitions(self.handshapes_R)
-            self.handshapes_L = label_smoothing_and_transitions(self.handshapes_L)
+            #self.handshapes_R = label_smoothing_and_transitions(self.handshapes_R)
+            #self.handshapes_L = label_smoothing_and_transitions(self.handshapes_L)
         else:
             self.handshapes_R = None
             self.handshapes_L = None
@@ -81,7 +81,8 @@ class PhoneticAnnotationPlot:
         self.gif_frames = []
         self.frames = data.frames
         # Directory to save frames
-        self.frames_dir = os.path.join(self.base_path[:-21], 'src','server', 'public', 'frames')
+
+        self.frames_dir = os.path.join(self.base_path[:-5],'PoseTools', 'src','server', 'public', 'frames')
 
         if self.base_filename:
             self.frames_dir = os.path.join(self.frames_dir, self.base_filename)
@@ -201,12 +202,12 @@ class PhoneticAnnotationPlot:
         ]
 
         ax_skeleton = self.fig.add_subplot(gs[2, 4])  
-        ax_skeleton.set_title('Mediapipe Skeleton')
+        ax_skeleton.set_title('SMPLer-X Skeleton')
         ax_skeleton.axis('off')  # Optional: hide axes if not needed
         self.axes['skeleton'] = ax_skeleton
 
         ax_skeleton_side = self.fig.add_subplot(gs[3, 4]) 
-        ax_skeleton_side.set_title('Mediapipe Skeleton')
+        ax_skeleton_side.set_title('SMPLer-X Skeleton')
         ax_skeleton_side.axis('off')  # Optional: hide axes if not needed
         self.axes['skeleton_side'] = ax_skeleton_side
         
@@ -414,7 +415,7 @@ class PhoneticAnnotationPlot:
             ax=self.axes['skeleton']
         )
         
-        self.axes['skeleton'].set_title('Mediapipe Skeleton')
+        self.axes['skeleton'].set_title('SMPLer-X Skeleton')
 
         self.pose_parser.plot_mp_skeleton(
             pose,
@@ -589,6 +590,7 @@ class PhoneticAnnotationPlot:
             self.progress_bar.update(current_frame - self.progress_bar.n)
 
         # Create the animation using FuncAnimation
+
         self.progress_bar = tqdm(total=len(self.frames), desc="Creating animation")
         anim = FuncAnimation(
             self.fig,
@@ -598,7 +600,7 @@ class PhoneticAnnotationPlot:
             blit=False
         )
 
-
+            
         try:
             anim.save(
                 save_path,
@@ -616,6 +618,7 @@ class PhoneticAnnotationPlot:
 
 def main_visualization(data, save_anim_path=None,sign_activity_arrays = None, boolean_activity_arrays = None, handshapes=None, handedness=None, orientations = None, locations = None, fps = 5):
         if save_anim_path:
+            
             animator = PhoneticAnnotationPlot(data, sign_activity_arrays, boolean_activity_arrays, handshapes = handshapes, handedness = handedness, orientations = orientations, locations = locations)
             animator.create_animation(save_path=save_anim_path, fps=fps)
 

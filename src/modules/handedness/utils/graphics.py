@@ -20,8 +20,8 @@ class PosePlotter:
         self.pose = pose
         self.data = None
         self.conf = None
-        self.wrist_index_left = 15
-        self.wrist_index_right = 16
+        self.wrist_index_left = 12
+        self.wrist_index_right = 13
         self.right_hand_base_index = np.array([16, 18, 20, 22])
         self.left_hand_base_index = np.array([15, 17, 19, 21])
         self.n = len(self.right_hand_base_index)
@@ -52,8 +52,8 @@ class PosePlotter:
         :return: Matplotlib Figure and Axes objects
         """
         x = pose[:, 0]
-        y = pose[:, 1]
-        z = -pose[:, 2]
+        y = -pose[:, 1]
+        z = pose[:, 2]
 
 
         #fig = ax.get_figure()
@@ -70,14 +70,14 @@ class PosePlotter:
             for ix in self.right_hand_base_index:
                 right_hand_com_x += x[ix]
                 right_hand_com_y += y[ix]
-            ax.scatter(right_hand_com_x/self.n, right_hand_com_y/self.n, color='red')
+            #ax.scatter(right_hand_com_x/self.n, right_hand_com_y/self.n, color='red')
             left_hand_com_x, left_hand_com_y = 0, 0
             for ix in self.left_hand_base_index:
                 left_hand_com_x += x[ix]
                 left_hand_com_y += y[ix]    
-            ax.scatter(left_hand_com_x/self.n, left_hand_com_y/self.n, color='green')
-            #ax.scatter(x[self.wrist_index_left], y[self.wrist_index_left], color='green')
-            #ax.scatter(x[self.wrist_index_right], y[self.wrist_index_right], color='red')
+            #ax.scatter(left_hand_com_x/self.n, left_hand_com_y/self.n, color='green')
+            ax.scatter(x[self.wrist_index_left], y[self.wrist_index_left], color='green')
+            ax.scatter(x[self.wrist_index_right], y[self.wrist_index_right], color='red')
             
         elif mode == 'yz':
             
@@ -85,8 +85,8 @@ class PosePlotter:
             ax.scatter(z[self.wrist_index_left], y[self.wrist_index_left], color='green')
             ax.scatter(z[self.wrist_index_right], y[self.wrist_index_right], color='red')
         
-        ax.set_xlim(-2, 2)
-        ax.set_ylim(-2, 2)
+        ax.set_xlim(-1, 1)
+        ax.set_ylim(-1, 1.5)
         # Plot edges
         #for edge in edges:
         #    start, end = edge
@@ -129,7 +129,7 @@ class PosePlotter:
 
         # Plot keypoints
         if mode == 'xy':
-            ax.scatter(x, y, color='blue')
+            ax.scatter(x, y, color='blue', s = 10)
             right_hand_base_index = [16, 18, 20, 22]
             left_hand_base_index = [15, 17, 19, 21]
             n = len(right_hand_base_index)
@@ -137,23 +137,23 @@ class PosePlotter:
             for ix in right_hand_base_index:
                 right_hand_com_x += x[ix]
                 right_hand_com_y += y[ix]
-            ax.scatter(right_hand_com_x/n, right_hand_com_y/n, color='red')
+            ax.scatter(right_hand_com_x/n, right_hand_com_y/n, color='red', s = 10)
             left_hand_com_x, left_hand_com_y = 0, 0
             for ix in left_hand_base_index:
                 left_hand_com_x += x[ix]
                 left_hand_com_y += y[ix]    
-            ax.scatter(left_hand_com_x/n, left_hand_com_y/n, color='green')
+            ax.scatter(left_hand_com_x/n, left_hand_com_y/n, color='green', s = 10)
             #ax.scatter(x[self.wrist_index_left], y[self.wrist_index_left], color='green')
             #ax.scatter(x[self.wrist_index_right], y[self.wrist_index_right], color='red')
             
         elif mode == 'yz':
             
-            ax.scatter(z, y, color='blue')
-            ax.scatter(z[self.wrist_index_left], y[self.wrist_index_left], color='green')
-            ax.scatter(z[self.wrist_index_right], y[self.wrist_index_right], color='red')
+            ax.scatter(z, y, color='blue', s = 10)
+            ax.scatter(z[self.wrist_index_left], y[self.wrist_index_left], color='green', s = 10)
+            ax.scatter(z[self.wrist_index_right], y[self.wrist_index_right], color='red', s = 10)
         
-        ax.set_xlim(-2, 2)
-        ax.set_ylim(-2, 2)
+        ax.set_xlim(-1, 1)
+        ax.set_ylim(-1, 1.5)
         # Plot edges
         #for edge in edges:
         #    start, end = edge

@@ -2,7 +2,6 @@ import os
 import argparse, subprocess,shutil
 
 from PoseTools.data.parsers_and_processors.converters.vid_to_hamer import main_hamer
-from PoseTools.src.modules.old_segmentation.segmentation import main_activation
 from PoseTools.src.modules.handedness.utils.eval_1_2_hands import main_handedness
 from PoseTools.src.modules.orientation.orientation import main_orientation
 from PoseTools.src.modules.location.location import main_location
@@ -97,12 +96,12 @@ def main(args, conver_data = False):
         gif_path = '/home/gomer/oline/PoseTools/src/server/public/gifs/'+base_filename+'.gif'
         boolean_activity_arrays, sign_activity_arrays, start, stop = main_activation(data, n_components = 2)
         
-        boolean_activity_arrays, sign_activity_arrays = data.select_data(start, stop, skip = 5, boolean_activity_arrays = boolean_activity_arrays, sign_activity_arrays = sign_activity_arrays) 
+        boolean_activity_arrays, sign_activity_arrays = data.select_data(start, stop, skip = 5, boolean_activity_arrays = boolean_activity_arrays, sign_activity_arrays = sign_activity_arrays, pre_cropped = False) 
 
         # TODO - setup for loading data with new base class
         handedness = main_handedness(boolean_activity_arrays)
         
-        handshape_predictions= main_handshape(data, input_folder + '/hamer_pkl', output_folder, boolean_arrays=boolean_activity_arrays, base_filename='normalized_' +base_filename, args=args)
+        handshape_predictions= main_handshape(data, input_folder + '/hamer/'+ base_filename + '/hamer_pkl', output_folder, boolean_arrays=boolean_activity_arrays, base_filename='normalized_' +base_filename, args=args)
         
         locations = main_location(data, print_results = False)
         orientations = main_orientation(data, print_results=False)

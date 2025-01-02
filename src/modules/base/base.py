@@ -16,12 +16,12 @@ class DataLoader:
     THUMB_BASE, THUMB_TIP = 0, 0
 
     # Pose indexes
-    SHOULDER_LEFT = 11
-    SHOULDER_RIGHT = 12
-    HIP_LEFT = 23
-    HIP_RIGHT = 24
-    WRIST_LEFT = 15
-    WRIST_RIGHT = 16
+    SHOULDER_LEFT = 8
+    SHOULDER_RIGHT = 9
+    HIP_LEFT = 0
+    HIP_RIGHT = 0
+    WRIST_LEFT = 12
+    WRIST_RIGHT = 13
 
     def __init__(self, base_filename, base_dir, args):
         # Define paths
@@ -30,11 +30,11 @@ class DataLoader:
         self.BASE_DIR = base_dir
         self.feature_transformations =  self.args.feature_transformation
         self.video_path = os.path.join(base_dir, 'video_files', f"{base_filename}.mp4")
-        self.pose_path = os.path.join(base_dir, 'pose_files', f"{base_filename}.pose")
-        self.hamer_left_path = os.path.join(base_dir, 'hamer_pkl', f"{base_filename}-L.pkl")
-        self.hamer_right_path = os.path.join(base_dir, 'hamer_pkl', f"{base_filename}-R.pkl")
-        self.normalized_hamer_left_path = os.path.join(base_dir, 'hamer_pkl', f"normalized_{base_filename}-L.pkl")
-        self.normalized_hamer_right_path = os.path.join(base_dir, 'hamer_pkl', f"normalized_{base_filename}-R.pkl")
+        self.pose_path = os.path.join(base_dir, 'smplx', f"{base_filename}_b.npy")
+        self.hamer_left_path = os.path.join(base_dir, 'hamer', f"{base_filename}", 'hamer_pkl', f"{base_filename}-L.pkl")
+        self.hamer_right_path = os.path.join(base_dir, 'hamer', f"{base_filename}", 'hamer_pkl', f"{base_filename}-R.pkl")
+        self.normalized_hamer_left_path = os.path.join(base_dir, 'hamer', f"{base_filename}", 'hamer_pkl', f"normalized_{base_filename}-L.pkl")
+        self.normalized_hamer_right_path = os.path.join(base_dir, 'hamer', f"{base_filename}", 'hamer_pkl', f"normalized_{base_filename}-R.pkl")
         
         # Initiate data components 
         self.frames = []
@@ -105,10 +105,13 @@ class DataLoader:
             traceback.print_exc()
             cap.release()
 
-    def load_pose(self, n_dims = 3):
+    def load_pose_poseformat(self, n_dims = 3):
         with open(self.pose_path, "rb") as file:
             self.pose_data = Pose.read(file.read())
             self.pose = self.pose_data.body.data.data
+    
+    def load_pose(self, n_dims = 3):
+        self.pose = np.load(self.pose_path).squeeze(1)
             
     def load_hamer(self, file_path):
         """Loads HAMER data for left or right hand."""
@@ -116,14 +119,15 @@ class DataLoader:
             hamer_data = pickle.load(file)
         return hamer_data.get('keypoints')
     
-    def select_data(self, start, stop, skip=3, padding = 12, boolean_activity_arrays=None, sign_activity_arrays=None):
+    def select_data(self, start, stop, skip=3, padding = 12, boolean_activity_arrays=None, sign_activity_arrays=None, pre_cropped = False):
         
         if start > padding:
-            start -= padding
-
-
+                start -= padding
         if stop + padding < self.num_frames:
             stop += padding
+        #if pre_cropped:
+        #    start = 0
+        #    stop = self.num_frames + 1
   
         self.pose = self.pose[start:stop:skip]
 
@@ -149,8 +153,21 @@ class DataLoader:
         self.velocity_left = np.diff(self.wrist_left, prepend=self.wrist_left[0])
         self.velocity_right = np.diff(self.wrist_right, prepend=self.wrist_right[0])
 
+        
         boolean_activity_arrays = boolean_activity_arrays[0][start:stop:skip],  boolean_activity_arrays[1][start:stop:skip] 
+
         sign_activity_arrays = sign_activity_arrays[0][start:stop:skip], sign_activity_arrays[1][start:stop:skip]
+
+        #if pre_cropped:
+        #    L = True if np.sum(boolean_activity_arrays[0]) != 0 else False
+        #    R = True if np.sum(boolean_activity_arrays[1]) != 0 else False
+        #    boolean_L = [1 for i in range(self.num_frames)] if L else [0 for i in range(self.num_frames)]
+        #    boolean_R = [1 for i in range(self.num_frames)] if R else [0 for i in range(self.num_frames)]
+        #    sign_L = ['Active' for i in range(self.num_frames)] if L else ['Inactive' for i in range(self.num_frames)]
+        #    sign_R = ['Active' for i in range(self.num_frames)] if R else ['Inactive' for i in range(self.num_frames)]
+        #    boolean_activity_arrays = boolean_L, boolean_R
+        #    sign_activity_arrays = sign_L, sign_R
+
         self.get_data_dict()
         return boolean_activity_arrays, sign_activity_arrays
 
@@ -184,14 +201,14 @@ class Preprocessor:
         
 
     def normalize_pose(self):
-        self.pose = self.selector.clean_keypoints(self.pose)
-        self.pose = self.selector.get_keypoints_pose(self.pose)
+        #self.pose = self.selector.clean_keypoints(self.pose)
+        #self.pose = self.selector.get_keypoints_pose(self.pose)
         
         self.wrist_left = self.selector.get_left_wrist(self.pose)[:, :self.n_dims]
         self.wrist_right = self.selector.get_right_wrist(self.pose)[:, :self.n_dims]
 
         # TODO: The normalization separately off the pose and wrist is a little wierd
-        self.pose = self.normalizer.fullpose_normalization(self.pose)
+        #self.pose = self.normalizer.fullpose_normalization(self.pose)
         self.shoulder_left = self.pose[:, self.SHOULDER_LEFT, :self.n_dims]
         self.shoulder_right = self.pose[:, self.SHOULDER_RIGHT, :self.n_dims]
         self.hip_left = self.pose[:, self.HIP_LEFT, :self.n_dims]

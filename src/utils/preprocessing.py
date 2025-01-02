@@ -92,10 +92,12 @@ class PoseSelect:
         return pose
     
     def get_left_wrist(self, pose):
-        return pose[:, 15, :]
+        print(pose.shape)
+        return pose[:, 12, :]
     
     def get_right_wrist(self, pose):
-        return pose[:, 16, :]
+        
+        return pose[:, 13, :]
 
 
     def get_keypoints_pose_hands_face(self, pose):
