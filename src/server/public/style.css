@@ -1,0 +1,476 @@
+/* styles.css */
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f5f5f5;
+}
+
+/* Tab Container */
+.tab {
+    overflow: hidden;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 20px;
+}
+
+/* Style the buttons inside the tab */
+.tab button {
+    background-color: inherit;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: background-color 0.3s;
+    font-size: 17px;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+    background-color: #ccc;
+}
+
+/* Tab content */
+.tabcontent {
+    display: none;
+    padding: 20px 0;
+}
+
+/* Show the active tab content */
+.tabcontent.active {
+    display: block;
+}
+
+/* Flex Container for Data Viewer */
+.data-viewer-container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+/* GIF Viewer Styles */
+.gif-viewer-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px; /* Space between sections */
+    justify-content: space-between;
+    align-items: flex-start;
+    }
+
+#MoCap #mocap-gif-viewer {
+    flex: 0 0 65%; /* Adjust as needed */
+    max-width: 65%;
+    }
+
+#MoCap #mocap-tools {
+    flex: 0 0 30%; /* Adjust as needed */
+    max-width: 30%;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    }
+
+.range-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 5px 0;
+    padding: 5px 10px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.range-item button {
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    background-color: #f44336; /* Red */
+    color: white;
+    border: none;
+    border-radius: 3px;
+}
+
+.range-item button:hover {
+    background-color: #d32f2f;
+}
+
+
+.gif-viewer {
+    flex: 1 1 60%;
+    background-color: #fff;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.gif-viewer h2 {
+    margin-bottom: 10px;
+}
+
+.gif-viewer select {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.frame-display {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.frame-display img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.frame-display #frame-info {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.controls {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.controls button {
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.controls button:disabled {
+    background-color: #eee;
+    cursor: not-allowed;
+}
+
+.controls label {
+    margin-right: 5px;
+}
+
+.controls input[type="number"] {
+    width: 80px;
+    padding: 5px;
+    font-size: 14px;
+}
+
+/* Loading Indicator Styles */
+#loading {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #555;
+    text-align: center;
+}
+
+#progress-container {
+    width: 80%;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    margin: 10px auto 0 auto;
+    height: 20px;
+    overflow: hidden;
+}
+
+#progress-bar {
+    width: 0%;
+    height: 100%;
+    background-color: #76c7c0;
+    transition: width 0.3s ease;
+}
+
+/* Note-Taking Styles */
+.note-taking {
+    flex: 1 1 35%;
+    background-color: #fff;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    max-height: 900px;
+    overflow-y: auto;
+}
+
+.note-taking h2 {
+    margin-bottom: 10px;
+}
+
+#note-input {
+    width: 100%;
+    height: 100px;
+    padding: 10px;
+    font-size: 16px;
+    resize: vertical;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+#save-note-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #4CAF50; /* Green */
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+#save-note-btn:hover {
+    background-color: #45a049;
+}
+
+#notes-list {
+    margin-top: 20px;
+}
+
+.note-item {
+    background-color: #f9f9f9;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-left: 4px solid #4CAF50;
+    border-radius: 3px;
+}
+
+.note-timestamp {
+    font-size: 12px;
+    color: #777;
+    margin-bottom: 5px;
+}
+
+.note-content {
+    font-size: 16px;
+}
+
+.note-item button {
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    background-color: #f44336; /* Red */
+    color: white;
+    border: none;
+    border-radius: 3px;
+    margin-top: 5px;
+}
+
+.note-item button:hover {
+    background-color: #d32f2f;
+}
+
+/* Reference Poses Viewer Styles */
+.reference-poses-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 20px; /* Space between columns */
+}
+
+/* Left Column: Pose Selection */
+.pose-selection {
+    flex: 0 0 300px; /* Fixed width */
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pose-selection label {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Vertical List of Checkboxes with Scroll */
+#pose-select-container {
+    display: flex;
+    flex-direction: column;
+    max-height: 600px; /* Adjust as needed */
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+#pose-select-container div {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#pose-select-container input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+#pose-select-container img {
+    width: 50px;
+    height: auto;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    object-fit: cover;
+}
+
+/* Clear All Button Styles */
+#clear-all-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: #f44336; /* Red */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+#clear-all-btn:hover {
+    background-color: #d32f2f;
+}
+
+/* Right Column: Pose Display */
+.pose-display {
+    flex: 1;
+    overflow-x: auto; /* Enable horizontal scrolling */
+    white-space: nowrap; /* Prevent images from wrapping */
+    padding-bottom: 10px; /* Space for scrollbar */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    background-color: #fff;
+}
+
+#reference-poses-container {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 20px; /* Space between images */
+}
+
+.reference-image-wrapper {
+    text-align: center;
+    max-width: 600px; /* Limit image size */
+}
+
+.reference-image-wrapper img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin-top: 5px;
+}
+
+.reference-image-wrapper .caption {
+    margin-bottom: 5px; /* Move caption above image */
+    font-size: 14px;
+    word-wrap: break-word; /* Handle long filenames */
+}
+
+#notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #4CAF50; /* Green for success */
+    color: white;
+    padding: 15px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    opacity: 0.9;
+    z-index: 1000;
+    display: none; /* Hidden by default */
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#notification.show {
+    display: block;
+    transform: translateY(0);
+}
+
+#notification.hide {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+#update-all-notes-btn {
+    padding: 10px 20px;
+    margin-bottom: 20px;
+    background-color: #4CAF50; /* Green */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#update-all-notes-btn:hover:not(:disabled) {
+    background-color: #45a049;
+}
+
+#update-all-notes-btn:disabled {
+    background-color: #9E9E9E;
+    cursor: not-allowed;
+}
+/* styles.css */
+
+/* Style for All Notes List */
+#all-notes-list {
+margin-top: 20px;
+}
+
+.gif-container {
+border: 1px solid #ddd;
+padding: 10px;
+border-radius: 5px;
+}
+
+.frame-container {
+border: 1px dashed #ccc;
+padding: 10px;
+border-radius: 5px;
+}
+
+ul {
+list-style-type: disc;
+margin-left: 40px;
+}
+
+li {
+margin-bottom: 5px;
+}
+
+/* Responsive Design */
+@media (max-width: 1000px) {
+    .data-viewer-container {
+        flex-direction: column;
+    }
+    .gif-viewer-container {
+    flex-direction: column; /* Stack items vertically */
+    gap: 10px;
+}
+    #MoCap #mocap-gif-viewer,
+    #MoCap #mocap-tools {
+        flex: 1 1 100%; /* Full width for both sections */
+        max-width: 100%;
+    }
+
+    .gif-viewer, .note-taking {
+        flex: 1 1 100%;
+    }
+
+    .reference-poses-layout {
+        flex-direction: column;
+    }
+
+    .pose-selection, .pose-display {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+}
+

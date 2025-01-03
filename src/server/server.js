@@ -7,6 +7,17 @@ const bodyParser = require('body-parser');
 const app = express();
 const { v4: uuidv4 } = require('uuid');
 
+
+// Suppose you store them in selected_frames.json
+const selectedFramesFile = path.join(__dirname, 'selected_frames.json');
+
+// Path to the notes.json file
+const notesFilePath = path.join(__dirname, 'notes.json');
+
+// A cache to store all MoCap frames by GIF base name
+const mocapFrameCache = {};
+
+
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
 
@@ -14,36 +25,6 @@ app.use(bodyParser.json());
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-
-// Path to the notes.json file
-const notesFilePath = path.join(__dirname, 'notes.json');
-
-// Utility function to read notes from the JSON file
-function readNotes() {
-    try {
-        if (!fs.existsSync(notesFilePath)) {
-            // If notes.json doesn't exist, create an empty object
-            fs.writeFileSync(notesFilePath, JSON.stringify({}, null, 4), 'utf8');
-            console.log('Created new notes.json file.');
-            return {};
-        }
-        const data = fs.readFileSync(notesFilePath, 'utf8');
-        return JSON.parse(data);
-    } catch (err) {
-        console.error('Error reading notes.json:', err);
-        return {};
-    }
-}
-
-// Utility function to write notes to the JSON file
-function writeNotes(notes) {
-    try {
-        fs.writeFileSync(notesFilePath, JSON.stringify(notes, null, 4), 'utf8');
-        console.log('Successfully wrote to notes.json.');
-    } catch (err) {
-        console.error('Error writing to notes.json:', err);
-    }
-}
 
 // API endpoint to list all GIFs
 app.get('/api/gifs', (req, res) => {
@@ -56,20 +37,6 @@ app.get('/api/gifs', (req, res) => {
         // Filter only GIF files
         const gifFiles = files.filter(file => path.extname(file).toLowerCase() === '.gif');
         res.json(gifFiles);
-    });
-});
-
-// API endpoint to list all Reference Pose PNGs
-app.get('/api/reference_poses', (req, res) => {
-    const refPosesDir = path.join(__dirname, 'public', 'reference_poses');
-    fs.readdir(refPosesDir, (err, files) => {
-        if (err) {
-            console.error('Error reading Reference Poses directory:', err);
-            return res.status(500).json({ error: 'Unable to scan Reference Poses directory.' });
-        }
-        // Filter only PNG files
-        const pngFiles = files.filter(file => path.extname(file).toLowerCase() === '.png');
-        res.json(pngFiles);
     });
 });
 
@@ -104,6 +71,21 @@ app.get('/api/gifs/:gifName/frames', (req, res) => {
         const frameUrls = sortedFrames.map(file => `/frames/${path.parse(gifName).name}/${file}`);
 
         res.json(frameUrls);
+    });
+});
+
+
+// API endpoint to list all Reference Pose PNGs
+app.get('/api/reference_poses', (req, res) => {
+    const refPosesDir = path.join(__dirname, 'public', 'reference_poses');
+    fs.readdir(refPosesDir, (err, files) => {
+        if (err) {
+            console.error('Error reading Reference Poses directory:', err);
+            return res.status(500).json({ error: 'Unable to scan Reference Poses directory.' });
+        }
+        // Filter only PNG files
+        const pngFiles = files.filter(file => path.extname(file).toLowerCase() === '.png');
+        res.json(pngFiles);
     });
 });
 
@@ -260,8 +242,162 @@ app.get('/api/mocap_gifs/:gifName/frames', (req, res) => {
     });
 });
 
+// API endpoint to list all selected frames for all MoCap GIFs
+app.get('/api/mocap_gifs/:gifName/selected_frames', (req, res) => {
+    const gifName = req.params.gifName; // e.g. "myMoCap.gif"
+    const baseName = path.parse(gifName).name; // e.g. "myMoCap"
+  
+    const allSelected = readSelectedFrames();
+    const framesForGif = allSelected[baseName] || [];
+    res.json(framesForGif);
+  });
+  
+// API endpoint to add selected frames for a specific MoCap GIF
+app.post('/api/mocap_gifs/:gifName/selected_frames', (req, res) => {
+    const gifName = req.params.gifName;
+    const baseName = path.parse(gifName).name;
+  
+    // The request body might look like: { rangeOrIndex: "211-234" } or { rangeOrIndex: "210" }
+    const { rangeOrIndex } = req.body;
+    if (!rangeOrIndex || typeof rangeOrIndex !== 'string') {
+      return res.status(400).json({ error: 'Invalid or missing rangeOrIndex.' });
+    }
+  
+    // Convert the rangeOrIndex into an array of integers
+    let indexesToAdd = [];
+    
+    // Check if it's like "211-234"
+    if (rangeOrIndex.includes('-')) {
+      const [start, end] = rangeOrIndex.split('-').map(str => parseInt(str.trim(), 10));
+      if (isNaN(start) || isNaN(end) || start > end) {
+        return res.status(400).json({ error: 'Invalid range format.' });
+      }
+      for (let i = start; i <= end; i++) {
+        indexesToAdd.push(i);
+      }
+    } else {
+      // Single index
+      const single = parseInt(rangeOrIndex, 10);
+      if (isNaN(single)) {
+        return res.status(400).json({ error: 'Invalid index format.' });
+      }
+      indexesToAdd.push(single);
+    }
+  
+    const allSelected = readSelectedFrames();
+    // Ensure we have an array for the baseName
+    if (!allSelected[baseName]) {
+      allSelected[baseName] = [];
+    }
+  
+    // Merge new indexes
+    const existing = new Set(allSelected[baseName]);
+    indexesToAdd.forEach(idx => existing.add(idx));
+    allSelected[baseName] = Array.from(existing).sort((a, b) => a - b); // Keep them sorted
+  
+    writeSelectedFrames(allSelected);
+  
+    res.json({ message: 'Frames added successfully.', frames: allSelected[baseName] });
+  });
+
+// API endpoint to delete a selected frame for a specific MoCap GIF
+// Example: DELETE /api/mocap_gifs/someMoCap.gif/selected_frames?start=211&end=234
+app.delete('/api/mocap_gifs/:gifName/selected_frames', (req, res) => {
+    const gifName = req.params.gifName;
+    const baseName = path.parse(gifName).name;
+    
+    // Parse query params for range
+    let { start, end } = req.query;
+    start = parseInt(start, 10);
+    end   = parseInt(end,   10);
+  
+    if (isNaN(start) || isNaN(end) || start > end) {
+      return res.status(400).json({ error: 'Invalid start/end range for deletion.' });
+    }
+  
+    const allSelected = readSelectedFrames(); // from selected_frames.json
+    if (!allSelected[baseName]) {
+      // No frames stored at all
+      return res.status(404).json({ error: 'No frames stored for this MoCap GIF.' });
+    }
+    
+    // Filter out indexes in the specified range
+    const oldArr = allSelected[baseName];
+    const newArr = oldArr.filter(idx => idx < start || idx > end);
+    allSelected[baseName] = newArr;
+  
+    writeSelectedFrames(allSelected);
+  
+    return res.json({
+      message: `Removed frames in range ${start}-${end}`,
+      frames: newArr
+    });
+  });
+
+// Utility function to read notes from the JSON file
+function readNotes() {
+    try {
+        if (!fs.existsSync(notesFilePath)) {
+            // If notes.json doesn't exist, create an empty object
+            fs.writeFileSync(notesFilePath, JSON.stringify({}, null, 4), 'utf8');
+            console.log('Created new notes.json file.');
+            return {};
+        }
+        const data = fs.readFileSync(notesFilePath, 'utf8');
+        return JSON.parse(data);
+    } catch (err) {
+        console.error('Error reading notes.json:', err);
+        return {};
+    }
+}
+
+// Utility function to write notes to the JSON file
+function writeNotes(notes) {
+    try {
+        fs.writeFileSync(notesFilePath, JSON.stringify(notes, null, 4), 'utf8');
+        console.log('Successfully wrote to notes.json.');
+    } catch (err) {
+        console.error('Error writing to notes.json:', err);
+    }
+}
+
+// Utility function to read selected frames from the JSON file
+function readSelectedFrames() {
+  try {
+    if (!fs.existsSync(selectedFramesFile)) {
+      fs.writeFileSync(selectedFramesFile, JSON.stringify({}, null, 2), 'utf8');
+      return {};
+    }
+    const data = fs.readFileSync(selectedFramesFile, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    console.error('Error reading selected_frames.json:', err);
+    return {};
+  }
+}
+
+// Utility function to write selected frames to the JSON file
+function writeSelectedFrames(data) {
+  try {
+    fs.writeFileSync(selectedFramesFile, JSON.stringify(data, null, 2), 'utf8');
+    console.log('Successfully wrote to selected_frames.json');
+  } catch (err) {
+    console.error('Error writing to selected_frames.json:', err);
+  }
+}
+
+app.get('/api/mocap_gifs/:gifName/selected_frames', (req, res) => {
+  const gifName = req.params.gifName; // e.g. "myMoCap.gif"
+  const baseName = path.parse(gifName).name; // e.g. "myMoCap"
+
+  const allSelected = readSelectedFrames();
+  const framesForGif = allSelected[baseName] || [];
+  res.json(framesForGif);
+});
+
+
 // Start the server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 2000;
 app.listen(PORT, () => {
     console.log(`Server is running at http://localhost:${PORT}`);
 });

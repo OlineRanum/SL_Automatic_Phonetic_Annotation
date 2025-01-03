@@ -108,5 +108,9 @@
                 "content": "Occlusion makes the N-V boundary very difficult. Here, also the version system of N makes the top3-prediction results in V being left out of top-3"
             }
         ]
+    },
+    "3_curved.gif": {
+        "frame_0000.png": [],
+        "frame_0002.png": []
     }
 }
