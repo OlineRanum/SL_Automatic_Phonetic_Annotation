@@ -10,8 +10,10 @@ const { v4: uuidv4 } = require('uuid');
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
 
+
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Path to the notes.json file
 const notesFilePath = path.join(__dirname, 'notes.json');
@@ -203,8 +205,64 @@ app.get('/api/notes', (req, res) => {
     res.json(notes);
 });
 
+// API endpoint to list all 3D MoCap GIFs
+app.get('/api/mocap_gifs', (req, res) => {
+    const mocapGifsDir = path.join(__dirname, 'public', 'mocap_gifs');
+    fs.readdir(mocapGifsDir, (err, files) => {
+        if (err) {
+            console.error('Error reading MoCap GIFs directory:', err);
+            return res.status(500).json({ error: 'Unable to scan MoCap GIFs directory.' });
+        }
+        // Filter only GIF files
+        const gifFiles = files.filter(file => path.extname(file).toLowerCase() === '.gif');
+        res.json(gifFiles);
+    });
+});
+
+// API endpoint to get frames for a specific 3D MoCap GIF
+app.get('/api/mocap_gifs/:gifName/frames', (req, res) => {
+    const gifName = req.params.gifName;
+    // We remove the .gif extension if you’re storing frames in a folder named just by the base name
+    const baseName = path.parse(gifName).name;
+
+    // Construct the folder path for the frames
+    const mocapFramesDir = path.join(__dirname, 'public', 'mocap_frames', baseName);
+
+    // Check if frames directory exists
+    if (!fs.existsSync(mocapFramesDir)) {
+        console.warn(`MoCap frames directory not found for GIF: ${gifName}`);
+        return res.status(404).json({ error: 'Frames not found for the selected MoCap GIF.' });
+    }
+
+    // Read frame files in that directory
+    fs.readdir(mocapFramesDir, (err, files) => {
+        if (err) {
+            console.error('Error reading MoCap frames directory:', err);
+            return res.status(500).json({ error: 'Unable to read MoCap frames directory.' });
+        }
+
+        // Filter out only .png files (assuming frames are PNG)
+        const sortedFrames = files
+            .filter(file => path.extname(file).toLowerCase() === '.png')
+            // Sort numerically if your file naming is like frame_1.png, frame_2.png, etc.
+            .sort((a, b) => {
+                const aNum = parseInt(path.basename(a).split('_')[1], 10);
+                const bNum = parseInt(path.basename(b).split('_')[1], 10);
+                return aNum - bNum;
+            });
+
+        // Construct URLs for each frame. 
+        // Because of app.use(express.static('public')), these files are available at /mocap_frames/<gifName>/<filename>.
+        const frameUrls = sortedFrames.map(file => `/mocap_frames/${baseName}/${file}`);
+
+        // Return the list of frame URLs
+        res.json(frameUrls);
+    });
+});
+
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server is running at http://localhost:${PORT}`);
 });
+

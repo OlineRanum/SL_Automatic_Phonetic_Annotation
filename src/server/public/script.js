@@ -49,6 +49,165 @@ document.addEventListener('DOMContentLoaded', () => {
     let referencePoses = [];
     let sbReferenceFiles = []; // List of sb_references JPG files
 
+    // MoCap GIF Viewer Variables
+    let mocapCurrentGifName = '';
+    let mocapCurrentFrames = [];
+    let mocapPreloadedImages = [];
+    let mocapCurrentFrameIndex = 0;
+    let mocapIsPlaying = false;
+    let mocapPlayInterval = null;
+    let mocapFrameRate = 200; // Default 200ms per frame
+    const mocapPreloadBatchSize = 10; // Frames to preload at a time
+
+    function fetchMoCapGifs() {
+        fetch('/api/mocap_gifs', { cache: 'no-store' })
+            .then(response => response.json())
+            .then(gifs => {
+                const mocapGifSelect = document.getElementById('mocap-gif-select');
+                if (gifs.length === 0) {
+                    mocapGifSelect.innerHTML = '<option value="">No GIFs available</option>';
+                    return;
+                }
+                mocapGifSelect.innerHTML = '<option value="">--Select a GIF--</option>';
+                gifs.forEach(gif => {
+                    const option = document.createElement('option');
+                    option.value = gif;
+                    option.textContent = gif;
+                    mocapGifSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching MoCap GIFs:', error);
+                document.getElementById('mocap-gif-select').innerHTML = '<option value="">Error loading GIFs</option>';
+            });
+    }
+    
+    document.getElementById('mocap-gif-select').addEventListener('change', () => {
+        const selectedGif = document.getElementById('mocap-gif-select').value;
+        const mocapLoadingIndicator = document.getElementById('mocap-loading');
+        const mocapProgressBar = document.getElementById('mocap-progress-bar');
+        const mocapGifImage = document.getElementById('mocap-gif-image');
+        const mocapFrameInfo = document.getElementById('mocap-frame-info');
+    
+        if (selectedGif) {
+            mocapCurrentGifName = selectedGif;
+            mocapStopPlayback();
+            mocapLoadingIndicator.style.display = 'block';
+            mocapProgressBar.style.width = '0%';
+    
+            fetch(`/api/gifs/${encodeURIComponent(selectedGif)}/frames`, { cache: 'no-store' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Frames not found.');
+                    }
+                    return response.json();
+                })
+                .then(frames => {
+                    if (frames.length === 0) {
+                        throw new Error('No frames available for this GIF.');
+                    }
+                    mocapCurrentFrames = frames;
+                    mocapCurrentFrameIndex = 0;
+                    mocapPreloadedImages = new Array(mocapCurrentFrames.length).fill(null);
+                    mocapPreloadBatch(mocapCurrentFrameIndex);
+                })
+                .catch(error => {
+                    console.error('Error fetching MoCap frames:', error);
+                    mocapLoadingIndicator.innerHTML = 'Error loading frames.';
+                });
+        } else {
+            // Reset state
+            mocapCurrentGifName = '';
+            mocapCurrentFrames = [];
+            mocapPreloadedImages = [];
+            mocapCurrentFrameIndex = 0;
+            mocapGifImage.src = '';
+            mocapFrameInfo.textContent = 'Frame: 0';
+            mocapLoadingIndicator.style.display = 'none';
+            mocapProgressBar.style.width = '0%';
+        }
+    });
+    function mocapPreloadBatch(startIndex) {
+        const endIndex = Math.min(startIndex + mocapPreloadBatchSize, mocapCurrentFrames.length);
+        const promises = [];
+        let loadedCount = 0;
+    
+        for (let i = startIndex; i < endIndex; i++) {
+            if (!mocapPreloadedImages[i]) {
+                const img = new Image();
+                img.src = mocapCurrentFrames[i];
+                const promise = new Promise(resolve => {
+                    img.onload = () => {
+                        mocapPreloadedImages[i] = img;
+                        loadedCount++;
+                        document.getElementById('mocap-progress-bar').style.width = `${(loadedCount / (endIndex - startIndex)) * 100}%`;
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        console.error(`Failed to load frame ${i + 1}`);
+                        loadedCount++;
+                        document.getElementById('mocap-progress-bar').style.width = `${(loadedCount / (endIndex - startIndex)) * 100}%`;
+                        resolve();
+                    };
+                });
+                promises.push(promise);
+            }
+        }
+    
+        Promise.all(promises).then(() => {
+            mocapUpdateFrame();
+        });
+    }
+    
+    function mocapUpdateFrame() {
+        const mocapGifImage = document.getElementById('mocap-gif-image');
+        const mocapFrameInfo = document.getElementById('mocap-frame-info');
+    
+        if (mocapPreloadedImages[mocapCurrentFrameIndex]) {
+            mocapGifImage.src = mocapPreloadedImages[mocapCurrentFrameIndex].src;
+            mocapFrameInfo.textContent = `Frame: ${mocapCurrentFrameIndex + 1} / ${mocapPreloadedImages.length}`;
+        }
+    }
+    document.getElementById('mocap-prev-btn').addEventListener('click', () => {
+        if (mocapCurrentFrameIndex > 0) {
+            mocapCurrentFrameIndex--;
+            mocapUpdateFrame();
+        }
+    });
+    
+    document.getElementById('mocap-next-btn').addEventListener('click', () => {
+        if (mocapCurrentFrameIndex < mocapPreloadedImages.length - 1) {
+            mocapCurrentFrameIndex++;
+            mocapUpdateFrame();
+        }
+    });
+    
+    document.getElementById('mocap-toggle-play-btn').addEventListener('click', () => {
+        if (mocapIsPlaying) {
+            mocapStopPlayback();
+        } else {
+            mocapStartPlayback();
+        }
+    });
+    
+    function mocapStartPlayback() {
+        mocapIsPlaying = true;
+        mocapPlayInterval = setInterval(() => {
+            mocapCurrentFrameIndex = (mocapCurrentFrameIndex + 1) % mocapPreloadedImages.length;
+            mocapUpdateFrame();
+        }, mocapFrameRate);
+    }
+    
+    function mocapStopPlayback() {
+        mocapIsPlaying = false;
+        clearInterval(mocapPlayInterval);
+    }
+    if (tabName === 'MoCap') {
+        fetchMoCapGifs();
+    }
+    
+    
+
     // **Fetch and Populate the GIF Dropdown**
     function fetchGifs() {
         fetch('/api/gifs', { cache: 'no-store' })

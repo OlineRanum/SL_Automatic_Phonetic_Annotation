@@ -18,8 +18,18 @@ This repository contains code for processing pose data from sign language videos
 ```
 
 2. Install the environmnet 
+Ensure that Node.js and npm are installed on your system
 ```
-    
+node -v
+npm -v
+```
+If not these can be installed using 
+```
+   sudo apt install nodejs npm
+```
+Install all server dependencies 
+```
+npm install
 ```
 Currently do not have an environment for the repository ready - please refer to the openhands environment at the monsterfish server.
 

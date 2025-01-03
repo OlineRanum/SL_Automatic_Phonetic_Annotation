@@ -436,6 +436,7 @@
         <button class="tablinks active" onclick="openTab(event, 'DataViewer')">Data Viewer</button>
         <button class="tablinks" onclick="openTab(event, 'ReferencePosesViewer')">Reference Poses Viewer</button>
         <button class="tablinks" onclick="openTab(event, 'AllNotes')">All Notes</button> <!-- New Tab -->
+        <button class="tablinks" onclick="openTab(event, 'MoCap')">3D MoCap</button> <!-- New Tab -->
     </div>
 
     <!-- Tab Content: Data Viewer -->
@@ -504,6 +505,35 @@
         </div>
     </div>
 
+    <!-- Tab Content: 3D MoCap -->
+    <div id="MoCap" class="tabcontent">
+        <h2>3D MoCap Reference Handshapes</h2>
+        <div class="gif-viewer">
+            <h3>GIF Loader</h3>
+            <select id="mocap-gif-select">
+                <option value="">--Select a GIF--</option>
+                <!-- Options will be dynamically populated -->
+            </select>
+            <div id="mocap-loading" style="display: none;">
+                Loading...
+                <div id="mocap-progress-container">
+                    <div id="mocap-progress-bar"></div>
+                </div>
+            </div>
+            <div class="frame-display">
+                <img id="mocap-gif-image" src="" alt="Selected GIF Frame">
+                <div id="mocap-frame-info">Frame: 0</div>
+            </div>
+            <div class="controls">
+                <button id="mocap-prev-btn" disabled>Previous Frame</button>
+                <button id="mocap-next-btn" disabled>Next Frame</button>
+                <button id="mocap-toggle-play-btn" disabled>Play GIF</button>
+                <label for="mocap-frame-rate">Frame Rate (ms):</label>
+                <input type="number" id="mocap-frame-rate" value="200" min="10" max="1000">
+            </div>
+        </div>
+    </div>
+
     <!-- Tab Content: All Notes -->
     <div id="AllNotes" class="tabcontent">
         <h2>All Notes</h2>
@@ -541,8 +571,10 @@
             document.getElementById(tabName).classList.add('active');
             evt.currentTarget.className += " active";
 
-            if (tabName === 'AllNotes') {
-                fetchAndDisplayAllNotes();
+            // Trigger specific behavior for the MoCap tab, if needed
+            if (tabName === 'MoCap') {
+                // Optionally add functionality here
+                console.log('3D MoCap Tab Activated');
             }
         }
     </script>
