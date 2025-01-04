@@ -397,7 +397,7 @@ app.get('/api/mocap_gifs/:gifName/selected_frames', (req, res) => {
 
 
 // Start the server
-const PORT = process.env.PORT || 2000;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
     console.log(`Server is running at http://localhost:${PORT}`);
 });
