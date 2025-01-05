@@ -1,4 +1,4 @@
-import { showNotification } from './notifications.js';
+import { showNotification } from '../notifications/main_notifications.js';
 
 export function initNotes() {
     // -------- Note-Taking Elements (Data Viewer Only) --------

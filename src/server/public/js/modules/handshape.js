@@ -1,4 +1,4 @@
-export function initReferencePoses() {
+export function initHandshapeViewer() {
     // -------- Reference Poses Viewer Elements --------
     const poseSelectContainer    = document.getElementById('pose-select-container');
     const referenceImageContainer= document.getElementById('reference-poses-container');
@@ -9,6 +9,7 @@ export function initReferencePoses() {
     let sbReferenceFiles   = [];
     fetchReferencePoses(); 
     fetchSbReferences();  
+    
     function fetchReferencePoses() {
         fetch('/api/reference_poses', { cache: 'no-store' })
             .then(response => response.json())
