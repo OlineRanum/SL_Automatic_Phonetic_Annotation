@@ -2,6 +2,7 @@
 
 const express = require('express');
 const path = require('path');
+const multer = require('multer');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const app = express();
@@ -396,9 +397,53 @@ app.get('/api/mocap_gifs/:gifName/selected_frames', (req, res) => {
 });
 
 
+
+// HANDELING FILE UPLOAD
+const uploadDir = path.join(__dirname, 'public', 'data/mocap');
+
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const filePath = path.join(uploadDir, file.originalname);
+
+        if (fs.existsSync(filePath)) {
+            console.warn(`File already exists: ${file.originalname}`);
+            return cb(new Error('File already exists in the repository.'));
+        }
+
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    },
+});
+
+const upload = multer({ storage });
+
+app.post('/api/data/mocap', (req, res, next) => {
+    upload.single('mocapFile')(req, res, (err) => {
+        if (err) {
+            if (err.message === 'File already exists in the repository.') {
+                return res.status(409).json({ error: err.message });
+            }
+            console.error('Error during file upload:', err);
+            return res.status(500).json({ error: 'File upload failed.' });
+        }
+
+        console.log(`File uploaded successfully: ${req.file.originalname}`);
+        res.json({
+            message: 'File uploaded successfully.',
+            filename: req.file.originalname,
+        });
+    });
+});
+
+
 // Start the server
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
     console.log(`Server is running at http://localhost:${PORT}`);
 });
-
