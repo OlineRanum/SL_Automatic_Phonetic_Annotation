@@ -151,12 +151,21 @@
         <h2>MoCap Data Uploader</h2>
         <p>Upload your MoCap file to the server:</p>
         <form id="uploadForm" enctype="multipart/form-data">
-            <input type="file" id="fileInput" name="mocapFile" accept=".json,.csv,.pose" />
+            <input type="file" id="fileInput" name="mocapFile" accept=".csv" multiple />
             <button type="submit">Upload</button>
         </form>
         <div id="uploadStatus"></div>
-        <!-- Add content for Reference Pose Selector tab here -->
+    
+        <h2>Process Data & Produce Visualization</h2>
+        <p>Select files to process and produce visualizations:</p>
+        <select id="fileDropdown" multiple size="5" style="width: 100%;"></select>
+        <button id="processDataButton">Process Data</button>
+        <button id="deleteDataButton" style="margin-left: 10px;">Delete</button>
+        <div id="processStatus"></div>
+
+        
     </div>
+    
 
     <!-- Tab Content for Reference Pose Selector -->
     <div class="mocap-tab-content" id="referencePoseContent" style="display: none;">

@@ -6,72 +6,137 @@ export function initMoCapDataUploader() {
         return;
     }
 
-    // Handle file upload
     const uploadForm = document.getElementById('uploadForm');
     const uploadStatus = document.getElementById('uploadStatus');
     const fileInput = document.getElementById('fileInput');
+    const fileDropdown = document.getElementById('fileDropdown');
+    const processButton = document.getElementById('processDataButton');
+    const processStatus = document.getElementById('processStatus');
 
-    // Function to reset the form and states with a delay
+    // Function to reset the uploader state
     function resetUploaderState(delay = 3000) {
         setTimeout(() => {
-            fileInput.value = ''; // Clear file input
-            uploadStatus.textContent = ''; // Clear upload status
+            fileInput.value = '';
+            uploadStatus.textContent = '';
         }, delay);
+    }
+
+    // Function to refresh the file list and sort alphabetically
+    function refreshFileList() {
+        // Clear the current options
+        fileDropdown.innerHTML = '';
+
+        // Fetch and populate the new file list
+        fetch('/api/data/mocap')
+            .then(response => response.json())
+            .then(files => {
+                // Sort the file list alphabetically
+                files.sort((a, b) => a.localeCompare(b));
+
+                // Populate the dropdown with sorted files
+                files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file;
+                    option.textContent = file;
+                    fileDropdown.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error refreshing file list:', error);
+                const errorOption = document.createElement('option');
+                errorOption.textContent = 'Error loading files';
+                fileDropdown.appendChild(errorOption);
+            });
     }
 
     uploadForm.addEventListener('submit', (e) => {
         e.preventDefault();
-
-        const file = fileInput.files[0]; // Get the selected file
-
-        if (!file) {
-            uploadStatus.textContent = 'Please select a file to upload.';
-            resetUploaderState(); // Reset after 3 seconds
+    
+        const files = Array.from(fileInput.files); // Get all selected files
+    
+        if (files.length === 0) {
+            uploadStatus.textContent = 'Please select at least one file to upload.';
+            resetUploaderState();
             return;
         }
-
+    
         const formData = new FormData();
-        formData.append('mocapFile', file);
-
-        // Perform the upload
+        files.forEach(file => formData.append('mocapFile', file));
+    
         fetch('/api/data/mocap', {
             method: 'POST',
             body: formData,
         })
-            .then((response) => {
-                if (response.status === 409) {
-                    // File already exists
-                    uploadStatus.textContent = `File "${file.name}" already exists in repository.`;
-                    throw new Error('File already exists in repository.');
-                }
+            .then(response => response.json())
+            .then(data => {
+                const uploadedFiles = data.uploadedFiles.map(f => f.filename).join(', ');
+                const ignoredFiles = data.ignoredFiles.join(', ');
+                uploadStatus.textContent = `Uploaded: ${uploadedFiles}. Ignored (already exists): ${ignoredFiles}.`;
+                refreshFileList(); // Refresh the file list after upload
+                resetUploaderState();
+            })
+            .catch(error => {
+                console.error('Error uploading files:', error);
+                uploadStatus.textContent = 'Error uploading files.';
+                resetUploaderState();
+            });
+    });
+    
+
+    processButton.addEventListener('click', () => {
+        const selectedFiles = Array.from(fileDropdown.selectedOptions).map(option => option.value);
+
+        if (selectedFiles.length === 0) {
+            processStatus.textContent = 'Please select files to process.';
+            return;
+        }
+
+        processStatus.textContent = 'Processing data...';
+
+        // Simulate processing
+        setTimeout(() => {
+            processStatus.textContent = `Processing completed for: ${selectedFiles.join(', ')}`;
+        }, 2000);
+    });
+
+    document.getElementById('deleteDataButton').addEventListener('click', () => {
+        const selectedFiles = Array.from(fileDropdown.selectedOptions).map(option => option.value);
+    
+        if (selectedFiles.length === 0) {
+            processStatus.textContent = 'Please select files to delete.';
+            return;
+        }
+    
+        // Confirm deletion
+        if (!confirm(`Are you sure you want to delete the selected files?`)) {
+            return;
+        }
+    
+        processStatus.textContent = 'Deleting files...';
+    
+        // Send delete request to the server
+        fetch('/api/data/mocap', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ files: selectedFiles }),
+        })
+            .then(response => {
                 if (!response.ok) {
-                    // General upload error
-                    throw new Error('File upload failed.');
+                    throw new Error('Failed to delete files.');
                 }
                 return response.json();
             })
-            .then((data) => {
-                uploadStatus.textContent = `File uploaded successfully: ${data.filename}`;
-                resetUploaderState(); // Reset after 3 seconds
+            .then(data => {
+                processStatus.textContent = `Deleted files: ${data.deletedFiles.join(', ')}`;
+                refreshFileList(); // Refresh the file list after deletion
             })
-            .catch((error) => {
-                console.error('Error uploading file:', error);
-
-                // Ensure error messages display properly
-                if (error.message === 'File already exists in repository.') {
-                    uploadStatus.textContent = `File "${file.name}" already exists in repository.`;
-                } else {
-                    uploadStatus.textContent = 'Error uploading file.';
-                }
-
-                // Keep the error message visible for 3 seconds before resetting
-                setTimeout(() => {
-                    uploadStatus.textContent = '';
-                    fileInput.value = ''; // Clear file input after message timeout
-                }, 3000);
+            .catch(error => {
+                console.error('Error deleting files:', error);
+                processStatus.textContent = 'Error deleting files.';
             });
     });
+    
 
-    // Reset the form on navigation or UI refresh
-    resetUploaderState(0); // No delay for initial reset
+    // Initial file list population
+    refreshFileList();
 }

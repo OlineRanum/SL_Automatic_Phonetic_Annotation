@@ -340,15 +340,25 @@ export function initMoCapDataViewer() {
             rangeItem.style.border = '1px solid #ccc';
             rangeItem.style.borderRadius = '5px';
 
+            const rangeContainer = document.createElement('div');
+            rangeContainer.style.display = 'flex'; // Use flexbox for layout
+            rangeContainer.style.justifyContent = 'space-between'; // Space out items
+            rangeContainer.style.alignItems = 'center'; // Align items vertically
+            
+            const rangeText = document.createElement('span');
+            rangeContainer.appendChild(rangeText);
+            
             const deleteBtn = document.createElement('button');
             deleteBtn.textContent = 'Delete';
-            deleteBtn.style.marginLeft = '10px';
+            deleteBtn.style.marginLeft = '10px'; // Add spacing to the left of the button
             deleteBtn.addEventListener('click', () => {
                 deleteRange(range);
             });
-
-            rangeItem.appendChild(deleteBtn);
+            
+            rangeContainer.appendChild(deleteBtn);
+            rangeItem.appendChild(rangeContainer);
             indexListContainer.appendChild(rangeItem);
+            
         });
     }
 

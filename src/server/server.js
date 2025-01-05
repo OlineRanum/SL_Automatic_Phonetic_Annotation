@@ -405,45 +405,112 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const filePath = path.join(uploadDir, file.originalname);
 
-        if (fs.existsSync(filePath)) {
-            console.warn(`File already exists: ${file.originalname}`);
-            return cb(new Error('File already exists in the repository.'));
-        }
 
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname);
-    },
+const upload = multer({
+    dest: path.join(__dirname, 'uploads'), // Temporary upload directory
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB limit
 });
 
-const upload = multer({ storage });
-
+// Endpoint to upload multiple files
 app.post('/api/data/mocap', (req, res, next) => {
-    upload.single('mocapFile')(req, res, (err) => {
+    upload.array('mocapFile', 10)(req, res, (err) => { // Allow up to 10 files
         if (err) {
-            if (err.message === 'File already exists in the repository.') {
-                return res.status(409).json({ error: err.message });
-            }
             console.error('Error during file upload:', err);
             return res.status(500).json({ error: 'File upload failed.' });
         }
 
-        console.log(`File uploaded successfully: ${req.file.originalname}`);
+        const mocapDir = path.join(__dirname, 'public', 'data', 'mocap');
+        const uploadedFiles = [];
+        const ignoredFiles = [];
+
+        req.files.forEach(file => {
+            const targetPath = path.join(mocapDir, file.originalname);
+
+            // Check if the file already exists
+            if (fs.existsSync(targetPath)) {
+                console.log(`File already exists, ignoring: ${file.originalname}`);
+                ignoredFiles.push(file.originalname);
+
+                // Remove temporary uploaded file
+                fs.unlinkSync(file.path);
+            } else {
+                try {
+                    // Move the file to the target directory
+                    fs.renameSync(file.path, targetPath);
+                    console.log(`File uploaded successfully: ${file.originalname}`);
+                    uploadedFiles.push({ filename: file.originalname });
+                } catch (err) {
+                    console.error(`Error moving file ${file.originalname}:`, err);
+                }
+            }
+        });
+
         res.json({
-            message: 'File uploaded successfully.',
-            filename: req.file.originalname,
+            message: 'Upload completed.',
+            uploadedFiles,
+            ignoredFiles,
         });
     });
 });
 
 
+// Endpoint to fetch file list
+app.get('/api/data/mocap', (req, res) => {
+    const mocapDir = path.join(__dirname, 'public', 'data', 'mocap');
+
+    fs.readdir(mocapDir, (err, files) => {
+        if (err) {
+            console.error('Error reading MoCap directory:', err);
+            return res.status(500).json({ error: 'Failed to fetch file list.' });
+        }
+
+        // Filter files based on extensions if needed
+        const validExtensions = ['.csv'];
+        const filteredFiles = files.filter(file =>
+            validExtensions.includes(path.extname(file))
+        );
+
+        res.json(filteredFiles);
+    });
+});
+
+app.delete('/api/data/mocap', (req, res) => {
+    const mocapDir = path.join(__dirname, 'public', 'data', 'mocap');
+    const { files } = req.body;
+
+    if (!files || files.length === 0) {
+        return res.status(400).json({ error: 'No files specified for deletion.' });
+    }
+
+    const deletedFiles = [];
+    const failedFiles = [];
+
+    files.forEach(file => {
+        const filePath = path.join(mocapDir, file);
+
+        if (fs.existsSync(filePath)) {
+            try {
+                fs.unlinkSync(filePath);
+                deletedFiles.push(file);
+            } catch (err) {
+                console.error(`Error deleting file ${file}:`, err);
+                failedFiles.push(file);
+            }
+        } else {
+            failedFiles.push(file);
+        }
+    });
+
+    res.json({
+        deletedFiles,
+        failedFiles,
+        message: `${deletedFiles.length} files deleted, ${failedFiles.length} failed.`,
+    });
+});
+
 // Start the server
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 2001;
 app.listen(PORT, () => {
     console.log(`Server is running at http://localhost:${PORT}`);
 });
