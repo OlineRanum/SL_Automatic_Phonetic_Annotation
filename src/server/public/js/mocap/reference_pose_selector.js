@@ -1,6 +1,6 @@
 // reference_pose_selector.js
-export function initReferencePoseSelector() {
-    const referencePoseSelector = document.getElementById('referencePoseSelector');
+export function initReferencePose() {
+    const referencePoseSelector = document.getElementById('referencePoseContent');
 
     // Placeholder content
     referencePoseSelector.innerHTML = `

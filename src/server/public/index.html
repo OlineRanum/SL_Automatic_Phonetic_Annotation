@@ -85,13 +85,13 @@
     </div>
 
     <!-- Tab Content: 3D MoCap -->
-<!-- Tab Content: 3D MoCap -->
-<div id="MoCap" class="tabcontent">
+    <div id="MoCap" class="tabcontent">
     <h2>3D MoCap</h2>
 
     <!-- Tabs within 3D MoCap -->
     <div class="tabs">
         <button id="mocapDataViewerTab" class="mocap-tab-button">Data Viewer</button>
+        <button id="mocapDataUploaderTab" class="mocap-tab-button">Upload Data</button>
         <button id="referencePoseTab" class="mocap-tab-button">Reference Pose</button>
     </div>
 
@@ -147,11 +147,23 @@
     </div>
 
     <!-- Tab Content for Reference Pose Selector -->
+    <div class="mocap-tab-content" id="mocapDataUploaderContent" style="display: none;">
+        <h2>MoCap Data Uploader</h2>
+        <p>Upload your MoCap file to the server:</p>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" id="fileInput" name="mocapFile" accept=".json,.csv,.pose" />
+            <button type="submit">Upload</button>
+        </form>
+        <div id="uploadStatus"></div>
+        <!-- Add content for Reference Pose Selector tab here -->
+    </div>
+
+    <!-- Tab Content for Reference Pose Selector -->
     <div class="mocap-tab-content" id="referencePoseContent" style="display: none;">
         <h3>Reference Pose Selector</h3>
         <!-- Add content for Reference Pose Selector tab here -->
     </div>
-</div>
+    </div>
 
 
     <!-- Tab Content: All Notes -->
