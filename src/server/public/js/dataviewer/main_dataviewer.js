@@ -30,30 +30,35 @@ export function initDataViewer() {
     const preloadBatchSize = 1000;
 
     // ---------- (A) FETCH GIF LIST ----------
-    function fetchGifs() {
-        fetch('/api/gifs', { cache: 'no-store' })
-            .then(response => response.json())
-            .then(gifs => {
-                if (gifs.length === 0) {
-                    gifSelect.innerHTML = '<option value="">No GIFs available</option>';
-                    return;
-                }
-                // Clear existing options
-                gifSelect.innerHTML = '<option value="">--Select a GIF--</option>';
-                gifs.forEach(gif => {
-                    const option = document.createElement('option');
-                    option.value = gif;
-                    option.textContent = gif;
-                    gifSelect.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching GIFs:', error);
-                gifSelect.innerHTML = '<option value="">Error loading GIFs</option>';
-            });
-    }
+// main_dataviewer.js
 
-    // ---------- (B) ON GIF SELECTION ----------
+function fetchGifs() {
+    fetch('/api/gifs', { cache: 'no-store' })
+        .then(response => response.json())
+        .then(gifs => {
+            if (gifs.length === 0) {
+                gifSelect.innerHTML = '<option value="">No GIFs available</option>';
+                return;
+            }
+            // Clear existing options
+            gifSelect.innerHTML = '<option value="">--Select a GIF--</option>';
+            gifs.forEach(gif => {
+                const option = document.createElement('option');
+                const baseName = gif.endsWith('.gif') ? gif.slice(0, -4) : gif; // Remove '.gif' if present
+                option.value = baseName; // Exclude '.gif'
+                option.textContent = gif; // Display with '.gif'
+                gifSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching GIFs:', error);
+            gifSelect.innerHTML = '<option value="">Error loading GIFs</option>';
+        });
+}
+
+
+
+        // ---------- (B) ON GIF SELECTION ----------
     gifSelect.addEventListener('change', () => {
         const selectedGif = gifSelect.value;
         if (selectedGif) {

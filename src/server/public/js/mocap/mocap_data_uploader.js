@@ -23,16 +23,18 @@ export function initMoCapDataUploader() {
 
     // Function to refresh the file list and sort alphabetically
     function refreshFileList() {
-        // Clear the current options
-        fileDropdown.innerHTML = '';
-
+        // Clear the current options to prevent duplication
+        while (fileDropdown.firstChild) {
+            fileDropdown.removeChild(fileDropdown.firstChild);
+        }
+    
         // Fetch and populate the new file list
         fetch('/api/data/mocap')
             .then(response => response.json())
             .then(files => {
                 // Sort the file list alphabetically
                 files.sort((a, b) => a.localeCompare(b));
-
+    
                 // Populate the dropdown with sorted files
                 files.forEach(file => {
                     const option = document.createElement('option');
@@ -48,7 +50,7 @@ export function initMoCapDataUploader() {
                 fileDropdown.appendChild(errorOption);
             });
     }
-
+    
     uploadForm.addEventListener('submit', (e) => {
         e.preventDefault();
     
@@ -71,7 +73,7 @@ export function initMoCapDataUploader() {
             .then(data => {
                 const uploadedFiles = data.uploadedFiles.map(f => f.filename).join(', ');
                 const ignoredFiles = data.ignoredFiles.join(', ');
-                uploadStatus.textContent = `Uploaded: ${uploadedFiles}. Ignored (already exists): ${ignoredFiles}.`;
+                uploadStatus.textContent = `Uploaded: ${uploadedFiles}.  Ignored (already exists): ${ignoredFiles}.`;
                 refreshFileList(); // Refresh the file list after upload
                 resetUploaderState();
             })

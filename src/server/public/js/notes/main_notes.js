@@ -1,3 +1,4 @@
+// main_notes.js
 import { showNotification } from '../notifications/main_notifications.js';
 
 export function initNotes() {
@@ -41,7 +42,7 @@ export function initNotes() {
         }
     
         const data = { content: noteContent };
-        fetch(`/api/gifs/${encodeURIComponent(currentGifName)}/frames/${encodeURIComponent(currentFrameName)}/notes`, {
+        fetch(`/api/notes/${encodeURIComponent(currentGifName)}/frames/${encodeURIComponent(currentFrameName)}/notes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
@@ -160,7 +161,7 @@ export function deleteNote(noteId, gifName, frameName) {
     const confirmDelete = confirm('Are you sure you want to delete this note?');
     if (!confirmDelete) return;
 
-    fetch(`/api/gifs/${encodeURIComponent(gifName)}/frames/${encodeURIComponent(frameName)}/notes/${encodeURIComponent(noteId)}`, {
+    fetch(`/api/notes/${encodeURIComponent(gifName)}/frames/${encodeURIComponent(frameName)}/notes/${encodeURIComponent(noteId)}`, {
         method: 'DELETE'
     })
         .then(response => {
@@ -236,7 +237,7 @@ export function fetchAndDisplayNotes(gifName, frameName) {
         clearNotesSection();
         return;
     }
-    fetch(`/api/gifs/${encodeURIComponent(gifName)}/frames/${encodeURIComponent(frameName)}/notes`, { cache: 'no-store' })
+    fetch(`/api/notes/${encodeURIComponent(gifName)}/frames/${encodeURIComponent(frameName)}/notes`, { cache: 'no-store' })
         .then(response => response.json())
         .then(notes => {
             displayNotes(notes, gifName, frameName);

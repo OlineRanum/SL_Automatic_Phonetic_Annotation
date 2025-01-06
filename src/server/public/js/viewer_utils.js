@@ -2,15 +2,18 @@
 // A small helper module to keep shared code DRY (Don't Repeat Yourself).
 
 /**
- * Preload a batch of frames (URLs) into an array of <img> objects.
+ * Start GIF/Frame playback on a timer.
  * 
- * @param {string[]} frames - Full list of frame URLs
- * @param {HTMLImageElement[]} preloadedImages - Parallel array to hold the loaded <img> objects
- * @param {number} startIndex - The starting frame index to preload
- * @param {number} batchSize - How many frames to load in this batch
- * @param {Function} onProgress - Callback(percent) => void. Called after each frame loads/fails
- * @returns {Promise<void>} Resolves when the batch is done loading.
+ * @param {Object} options 
+ * @param {Object} options.isPlayingRef - An object containing a boolean `value` property. Will be set to true.
+ * @param {number} options.frameRate - Interval in ms
+ * @param {Object} options.currentFrameIndexRef - An object containing the current frame index in a `value` property. Will be incremented automatically.
+ * @param {HTMLImageElement[]} options.preloadedImages
+ * @param {Function} options.updateFrame - A callback to re-render the current frame in the UI
+ * @param {Function} options.updateControls - A callback to update your UI controls (prev, next, etc.)
+ * @returns {number} A setInterval() timer ID. Use clearInterval(...) to stop.
  */
+
 export function preloadBatch(frames, preloadedImages, startIndex, batchSize, onProgress) {
     const endIndex   = Math.min(startIndex + batchSize, frames.length);
     const promises   = [];
