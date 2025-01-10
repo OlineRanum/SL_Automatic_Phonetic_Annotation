@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const gifsDir = path.join(__dirname, '..',  '..','public', 'gifs');
+const gifsDir = path.join(__dirname, '..',  '..','public','graphics', 'gifs');
 
 exports.listGifs = (req, res) => {
     fs.readdir(gifsDir, (err, files) => {
@@ -17,7 +17,7 @@ exports.listGifs = (req, res) => {
 
 exports.getGifFrames = (req, res) => {
     const gifName = req.params.gifName;
-    const framesDir = path.join(__dirname, '..', '..', 'public', 'frames', path.parse(gifName).name);
+    const framesDir = path.join(__dirname, '..', '..', 'public', 'graphics','frames', path.parse(gifName).name);
 
     if (!fs.existsSync(framesDir)) {
         console.warn(`Frames directory not found for GIF: ${gifName}`);
@@ -38,7 +38,7 @@ exports.getGifFrames = (req, res) => {
                 return aNum - bNum;
             });
 
-        const frameUrls = sortedFrames.map(file => `/frames/${path.parse(gifName).name}/${file}`);
+        const frameUrls = sortedFrames.map(file => `graphics/frames/${path.parse(gifName).name}/${file}`);
         res.json(frameUrls);
     });
 };

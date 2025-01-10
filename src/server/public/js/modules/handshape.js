@@ -11,7 +11,7 @@ export function initHandshapeViewer() {
     fetchSbReferences();  
     
     function fetchReferencePoses() {
-        fetch('/api/reference_poses', { cache: 'no-store' })
+        fetch('/api/graphics/reference_poses', { cache: 'no-store' })
             .then(response => response.json())
             .then(pngFiles => {
                 if (pngFiles.length === 0) {
@@ -32,7 +32,7 @@ export function initHandshapeViewer() {
 
                     // Thumbnail
                     const thumbnail = document.createElement('img');
-                    thumbnail.src   = `/reference_poses/${png}`;
+                    thumbnail.src   = `/graphics/reference_poses/${png}`;
                     thumbnail.alt   = `${png} thumbnail`;
                     thumbnail.style.width = '50px';
                     thumbnail.style.height= 'auto';
@@ -70,7 +70,7 @@ export function initHandshapeViewer() {
     }
 
     function fetchSbReferences() {
-        fetch('/api/sb_references', { cache: 'no-store' })
+        fetch('/api/graphics/sb_references', { cache: 'no-store' })
             .then(response => response.json())
             .then(jpgFiles => {
                 sbReferenceFiles = jpgFiles;
@@ -98,7 +98,7 @@ export function initHandshapeViewer() {
         poseCaption.textContent= png;
 
         const poseImg   = document.createElement('img');
-        poseImg.src     = `/reference_poses/${png}`;
+        poseImg.src     = `/graphics/reference_poses/${png}`;
         poseImg.alt     = png;
         poseImg.onload  = () => { /* loaded */ };
         poseImg.onerror = () => {
@@ -116,7 +116,7 @@ export function initHandshapeViewer() {
             sbCaption.textContent= sbReferenceName;
 
             const sbImg   = document.createElement('img');
-            sbImg.src     = `/sb_references/${sbReferenceName}`;
+            sbImg.src     = `/graphics/sb_references/${sbReferenceName}`;
             sbImg.alt     = sbReferenceName;
             sbImg.onload  = () => { /* loaded */ };
             sbImg.onerror = () => {

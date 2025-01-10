@@ -1,3 +1,5 @@
+import { fetchMoCapGifs } from './mocap_data_viewer.js';
+
 export function initMoCap() {
     const mocapContainer = document.getElementById('MoCap');
     if (!mocapContainer) {
@@ -43,6 +45,7 @@ export function initMoCap() {
     if (mocapDataViewerTab && mocapDataViewerContent) {
         mocapDataViewerTab.addEventListener('click', () => {
             switchTab(mocapDataViewerTab, mocapDataViewerContent);
+            fetchMoCapGifs();
             if (!modulesLoaded.viewer) {
                 import('./mocap_data_viewer.js')
                     .then(({ initMoCapDataViewer }) => {

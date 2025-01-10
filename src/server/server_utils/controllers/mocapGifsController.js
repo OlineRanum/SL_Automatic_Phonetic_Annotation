@@ -3,9 +3,9 @@ const fs = require('fs');
 const path = require('path');
 const { readJSON, writeJSON } = require('../utils/fileUtils');
 
-const mocapGifsDir = path.join(__dirname, '..','..', 'public', 'mocap_gifs');
-const mocapFramesDir = path.join(__dirname, '..','..', 'public', 'mocap_frames');
-const selectedFramesFile = path.join(__dirname, '..','..', 'selected_frames.json');
+const mocapGifsDir = path.join(__dirname, '..','..', 'public','graphics', 'mocap_gifs');
+const mocapFramesDir = path.join(__dirname, '..','..', 'public','graphics', 'mocap_frames');
+const selectedFramesFile = path.join(__dirname, '..','..','public','output', 'selected_frames.json');
 
 exports.listMocapGifs = (req, res) => {
     fs.readdir(mocapGifsDir, (err, files) => {
@@ -42,7 +42,7 @@ exports.getMocapGifFrames = (req, res) => {
                 return aNum - bNum;
             });
 
-        const frameUrls = sortedFrames.map(file => `/mocap_frames/${baseName}/${file}`);
+        const frameUrls = sortedFrames.map(file => `/graphics/mocap_frames/${baseName}/${file}`);
         res.json(frameUrls);
     });
 };

@@ -33,7 +33,7 @@ export function initDataViewer() {
 // main_dataviewer.js
 
 function fetchGifs() {
-    fetch('/api/gifs', { cache: 'no-store' })
+    fetch('/api/graphics/gifs', { cache: 'no-store' })
         .then(response => response.json())
         .then(gifs => {
             if (gifs.length === 0) {
@@ -66,7 +66,7 @@ function fetchGifs() {
             stopPlaybackImmediate();  // Stop if playing
             showLoading(true);
 
-            fetch(`/api/gifs/${encodeURIComponent(selectedGif)}/frames`, { cache: 'no-store' })
+            fetch(`/api/graphics/gifs/${encodeURIComponent(selectedGif)}/frames`, { cache: 'no-store' })
                 .then(response => {
                     if (!response.ok) throw new Error('Frames not found.');
                     return response.json();

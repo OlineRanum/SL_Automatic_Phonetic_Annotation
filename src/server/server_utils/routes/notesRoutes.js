@@ -1,6 +1,7 @@
 // routes/notesRoutes.js
 const express = require('express');
 const router = express.Router();
+const path = require('path'); // Import the 'path' module
 const notesController = require('../controllers/notesController');
 
 // Get all notes

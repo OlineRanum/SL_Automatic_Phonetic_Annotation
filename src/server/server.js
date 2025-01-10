@@ -6,8 +6,14 @@ const app = express();
 
 
 
+
+const processMocapRoutes = require('./server_utils/routes/processMocapRoutes');
+
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
+
+
+app.use('/api/process_mocap', processMocapRoutes);
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -19,17 +25,18 @@ const sbReferencesRoutes = require('./server_utils/routes/sbReferencesRoutes');
 const notesRoutes = require('./server_utils/routes/notesRoutes');
 const mocapGifsRoutes = require('./server_utils/routes/mocapGifsRoutes');
 const dataMocapRoutes = require('./server_utils/routes/dataMocapRoutes');
-
 // Mount routes
-app.use('/api/gifs', gifsRoutes);
-app.use('/api/reference_poses', referencePosesRoutes);
-app.use('/api/sb_references', sbReferencesRoutes);
+app.use('/api/graphics/gifs', gifsRoutes);
+app.use('/api/graphics/reference_poses', referencePosesRoutes);
+app.use('/api/graphics/sb_references', sbReferencesRoutes);
 app.use('/api/notes', notesRoutes);
-app.use('/api/mocap_gifs', mocapGifsRoutes);
+app.use('/api/graphics/mocap_gifs', mocapGifsRoutes);
 app.use('/api/data/mocap', dataMocapRoutes);
 
+
+
 // Start the server
-const PORT = process.env.PORT || 2003;
+const PORT = process.env.PORT || 2005;
 app.listen(PORT, () => {
     console.log(`Server is running at http://localhost:${PORT}`);
 });

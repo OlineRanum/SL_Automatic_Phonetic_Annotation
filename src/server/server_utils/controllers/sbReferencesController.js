@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const sbRefDir = path.join(__dirname, '..','..', 'public', 'sb_references');
+const sbRefDir = path.join(__dirname, '..','..', 'public','graphics', 'sb_references');
 
 exports.listSbReferences = (req, res) => {
     fs.readdir(sbRefDir, (err, files) => {

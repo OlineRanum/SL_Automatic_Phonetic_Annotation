@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const refPosesDir = path.join(__dirname, '..','..', 'public', 'reference_poses');
+const refPosesDir = path.join(__dirname, '..','..', 'public','graphics', 'reference_poses');
 
 exports.listReferencePoses = (req, res) => {
     fs.readdir(refPosesDir, (err, files) => {

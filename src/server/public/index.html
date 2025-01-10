@@ -90,8 +90,8 @@
 
     <!-- Tabs within 3D MoCap -->
     <div class="tabs">
-        <button id="mocapDataViewerTab" class="mocap-tab-button">Data Viewer</button>
         <button id="mocapDataUploaderTab" class="mocap-tab-button">Upload Data</button>
+        <button id="mocapDataViewerTab" class="mocap-tab-button">Data Viewer</button>
         <button id="referencePoseTab" class="mocap-tab-button">Reference Pose</button>
     </div>
 
@@ -159,10 +159,13 @@
         <h2>Process Data & Produce Visualization</h2>
         <p>Select files to process and produce visualizations:</p>
         <select id="fileDropdown" multiple size="5" style="width: 100%;"></select>
-        <button id="processDataButton">Process Data</button>
-        <button id="deleteDataButton" style="margin-left: 10px;">Delete</button>
+        <button id="processDataButton">Process Selected Files</button>
+        <button id="deleteDataButton">Delete Selected Files</button>
+        
         <div id="processStatus"></div>
-
+        <div id="progressContainer">
+            <div id="progressBar"></div>
+        </div>
         
     </div>
     

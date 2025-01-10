@@ -32,28 +32,6 @@ export function initMoCapDataViewer() {
     // We'll store selected frame indices (fetched from server) in a local object
     let frameIndices = {};
 
-    // ---------- (A) FETCH MOCAP GIF LIST ----------
-    function fetchMoCapGifs() {
-        fetch('/api/mocap_gifs', { cache: 'no-store' })
-            .then(r => r.json())
-            .then(gifs => {
-                if (!gifs.length) {
-                    mocapGifSelect.innerHTML = '<option value="">No GIFs available</option>';
-                    return;
-                }
-                mocapGifSelect.innerHTML = '<option value="">--Select a GIF--</option>';
-                gifs.forEach(gif => {
-                    const option = document.createElement('option');
-                    option.value = gif;
-                    option.textContent = gif;
-                    mocapGifSelect.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching MoCap GIFs:', error);
-                mocapGifSelect.innerHTML = '<option value="">Error loading GIFs</option>';
-            });
-    }
 
     // ---------- (B) HANDLE MOCAP GIF SELECTION ----------
     mocapGifSelect.addEventListener('change', () => {
@@ -70,7 +48,7 @@ export function initMoCapDataViewer() {
         mocapProgressBar.style.width = '0%';
 
         // Fetch frames
-        fetch(`/api/mocap_gifs/${encodeURIComponent(selectedGif)}/frames`, { cache: 'no-store' })
+        fetch(`/api/graphics/mocap_gifs/${encodeURIComponent(selectedGif)}/frames`, { cache: 'no-store' })
             .then(r => {
                 if (!r.ok) throw new Error('Frames not found.');
                 return r.json();
@@ -247,7 +225,7 @@ export function initMoCapDataViewer() {
             return;
         }
         const baseName = encodeURIComponent(mocapCurrentGifName);
-        fetch(`/api/mocap_gifs/${baseName}/selected_frames`, {
+        fetch(`/api/graphics/mocap_gifs/${baseName}/selected_frames`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ rangeOrIndex: inputValue })
@@ -285,7 +263,7 @@ export function initMoCapDataViewer() {
             return;
         }
         const encoded = encodeURIComponent(mocapCurrentGifName);
-        fetch(`/api/mocap_gifs/${encoded}/selected_frames?start=${start}&end=${end}`, {
+        fetch(`/api/graphics/mocap_gifs/${encoded}/selected_frames?start=${start}&end=${end}`, {
             method: 'DELETE'
         })
         .then(r => {
@@ -310,7 +288,7 @@ export function initMoCapDataViewer() {
             return;
         }
         const baseName = encodeURIComponent(mocapCurrentGifName);
-        fetch(`/api/mocap_gifs/${baseName}/selected_frames`)
+        fetch(`/api/graphics/mocap_gifs/${baseName}/selected_frames`)
             .then(r => r.json())
             .then(indexes => {
                 frameIndices = {};
@@ -367,7 +345,7 @@ export function initMoCapDataViewer() {
         const start = parseInt(startStr, 10);
         const end   = endStr ? parseInt(endStr, 10) : start;
         const encoded = encodeURIComponent(mocapCurrentGifName);
-        fetch(`/api/mocap_gifs/${encoded}/selected_frames?start=${start}&end=${end}`, {
+        fetch(`/api/graphics/mocap_gifs/${encoded}/selected_frames?start=${start}&end=${end}`, {
             method: 'DELETE'
         })
         .then(r => {
@@ -506,3 +484,30 @@ export function initMoCapDataViewer() {
     // ---------- (J) INIT -----------
     fetchMoCapGifs();
 }
+
+
+
+export function fetchMoCapGifs() {
+    const mocapGifSelect       = document.getElementById('mocap-gif-select');
+
+    fetch('/api/graphics/mocap_gifs', { cache: 'no-store' })
+        .then(r => r.json())
+        .then(gifs => {
+            if (!gifs.length) {
+                mocapGifSelect.innerHTML = '<option value="">No GIFs available</option>';
+                return;
+            }
+            mocapGifSelect.innerHTML = '<option value="">--Select a GIF--</option>';
+            gifs.forEach(gif => {
+                const option = document.createElement('option');
+                option.value = gif;
+                option.textContent = gif;
+                mocapGifSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching MoCap GIFs:', error);
+            mocapGifSelect.innerHTML = '<option value="">Error loading GIFs</option>';
+        });
+}
+
