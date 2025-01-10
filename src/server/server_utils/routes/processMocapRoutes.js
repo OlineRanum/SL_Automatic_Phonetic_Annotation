@@ -36,6 +36,9 @@ router.get('/progress', (req, res) => {
     req.on('close', () => {
         clearInterval(intervalId);
         console.log('Client disconnected from progress updates.');
+        progressData.progress = 0; // Reset progress
+        progressData.message = ''; // Clear message
+        progressData.currentFile = '';
     });
 });
 

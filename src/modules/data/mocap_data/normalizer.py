@@ -112,8 +112,6 @@ class Normalizer:
 
         riwr_idx = self.marker_names.tolist().index("RIWR")
         rowr_idx = self.marker_names.tolist().index("ROWR")
-        print("Reference frame RIWR:", normalized_ref_data[riwr_idx])
-        print("Reference frame ROWR:", normalized_ref_data[rowr_idx])
 
 
     def normalize_handshape(self, handshape, marker_names):

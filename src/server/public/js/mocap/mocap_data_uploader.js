@@ -268,14 +268,17 @@ export function initMoCapDataUploader() {
             processStatus.textContent = 'Processing complete!';
             progressBar.style.width = '100%';
             console.log('finished ', progressUpdate.progress); // Debug log
-            progressUpdate.progress = 0; // Reset progress
-            
+
+
             // Close EventSource if it exists
             if (eventSource) {
                 eventSource.close();
                 eventSource = null; // Clear the reference
             }
             processButton.disabled = false; // Re-enable the button
+            progressUpdate.progress = 0; // Reset progress
+            progressUpdate.message = ''; // Clear message
+            progressUpdate.currentFile = '';
         }
     }
 
