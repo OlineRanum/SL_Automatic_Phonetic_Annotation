@@ -1,0 +1,118 @@
+{
+  "M20240828_0037": {
+    "frame_0000.png": [
+      {
+        "id": "0eb0d521-66f3-498a-9b74-712c9108c091",
+        "timestamp": "2024-11-22T10:27:52.838Z",
+        "content": "The initial orientation of the R hand is wrong ( In instead of Back)"
+      }
+    ],
+    "frame_0002.png": [],
+    "frame_0001.png": [],
+    "frame_0004.png": [
+      {
+        "id": "cb2a647b-a581-40f9-b4d9-c601c8938a98",
+        "timestamp": "2024-11-22T10:26:49.444Z",
+        "content": "Missing L Orientation"
+      }
+    ],
+    "frame_0006.png": [
+      {
+        "id": "78a3ec95-c1a7-4873-be2d-a80af2f46de2",
+        "timestamp": "2024-11-22T10:47:14.898Z",
+        "content": "Orientation -L Shows down"
+      }
+    ],
+    "frame_0035.png": [
+      {
+        "id": "4a8e27a6-c047-4a0f-b316-e5a84e560528",
+        "timestamp": "2024-11-22T10:58:14.224Z",
+        "content": "The flower handshape is detected - this handshape is poorly represented"
+      }
+    ],
+    "frame_0048.png": [
+      {
+        "id": "cb6852c1-4ca7-494a-aec3-9f315e2a4ebc",
+        "timestamp": "2024-11-22T11:11:30.415Z",
+        "content": "Something here should be accounted for by the label smoothing I think - Label smoothing can potentially help prevent inaccuracies due to occlusion if we can leverage that handshapes are dynamic and different parts of the hand are visible along the motion trajectory."
+      }
+    ]
+  },
+  "M20240828_0046": {
+    "frame_0009.png": [
+      {
+        "id": "4db716a6-6f78-4b8e-aae6-fcce7087789c",
+        "timestamp": "2024-11-22T11:18:57.146Z",
+        "content": "Occlusion, why is not label smoothing correcting this?"
+      }
+    ],
+    "frame_0027.png": [
+      {
+        "id": "d87e5151-c65b-480c-8fc9-7d5dd390b9b7",
+        "timestamp": "2024-11-22T11:20:10.031Z",
+        "content": "Handshapes: Beak_spread - O boundary"
+      }
+    ],
+    "frame_0043.png": [
+      {
+        "id": "94fc00f9-11bf-4fbd-81cf-071eaa6ba88b",
+        "timestamp": "2024-11-22T11:22:04.822Z",
+        "content": "Looking at the Righ Hand Hamer representation, indicating something should be wrong with the T - T_open boundary"
+      }
+    ],
+    "frame_0050.png": [
+      {
+        "id": "3f9c9e7e-78bf-458c-a45e-a8713040fef9",
+        "timestamp": "2024-11-22T11:22:52.158Z",
+        "content": "L hand Up Down seems switched"
+      }
+    ]
+  },
+  "M20240828_0064": {
+    "frame_0014.png": [
+      {
+        "id": "907f6663-842b-4f15-a595-a785c9a12667",
+        "timestamp": "2024-11-22T11:25:42.406Z",
+        "content": "1 curved or 1? Is this a boundary issue or just hard to tell"
+      }
+    ],
+    "frame_0022.png": [
+      {
+        "id": "01f4014d-f34b-4152-8afe-fa1b1a40d1bd",
+        "timestamp": "2024-11-22T11:26:35.487Z",
+        "content": "There is a bug in the handedness labeling"
+      }
+    ],
+    "frame_0045.png": [
+      {
+        "id": "1b0e4d12-3232-46c3-8971-9c649257d929",
+        "timestamp": "2024-11-22T11:28:28.534Z",
+        "content": "Right hand inactivity detected to early - could this be solved by adding orientation to the state model?"
+      }
+    ]
+  },
+  "M20240925_1819": {
+    "frame_0026.png": [
+      {
+        "id": "732df267-5e42-43e1-8483-99c34b844e25",
+        "timestamp": "2024-11-22T12:03:33.545Z",
+        "content": "Occlusion of left hand makes the handshape prediction challenging, not sure myself"
+      }
+    ]
+  },
+  "M20240925_1822": {
+    "frame_0020.png": [
+      {
+        "id": "946d7e8e-7384-4441-a6c8-2a89475c6cd1",
+        "timestamp": "2024-11-22T12:05:58.391Z",
+        "content": "Occlusion makes the N-V boundary very difficult. Here, also the version system of N makes the top3-prediction results in V being left out of top-3"
+      }
+    ]
+  },
+  "3_curved": {
+    "frame_0000.png": [],
+    "frame_0002.png": [],
+    "frame_0174.png": [],
+    "frame_0001.png": []
+  }
+}
