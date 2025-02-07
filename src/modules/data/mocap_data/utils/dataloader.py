@@ -1,6 +1,6 @@
 import numpy as np 
 import pandas as pd
-from normalizer import Normalizer
+from utils.normalizer import Normalizer
 
 class DataLoader:
     def __init__(self, file_path, mode = 'hand'):

@@ -3,8 +3,8 @@ matplotlib.use('Agg')  # Use a non-interactive backend
 import numpy as np
 import matplotlib.pyplot as plt
 import imageio
-from dataloader import DataLoader
-from normalizer import Normalizer
+from utils.dataloader import DataLoader
+from utils.normalizer import Normalizer
 
 
 class Plotter:

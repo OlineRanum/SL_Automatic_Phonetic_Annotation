@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 import imageio
 import os
 from mpl_toolkits.mplot3d import Axes3D
-from dataloader import DataLoader
-from normalizer import Normalizer
+from utils.dataloader import DataLoader
+from utils.normalizer import Normalizer
 from plotter import Plotter
 
 

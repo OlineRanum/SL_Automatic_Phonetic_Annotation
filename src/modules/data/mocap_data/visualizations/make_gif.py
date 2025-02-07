@@ -2,8 +2,8 @@ import numpy as np
 import os
 
 # Imports from your local modules
-from dataloader import DataLoader
-from normalizer import Normalizer
+from utils.dataloader import DataLoader
+from utils.normalizer import Normalizer
 
 from visualize_reference_data import NewPlotter 
 

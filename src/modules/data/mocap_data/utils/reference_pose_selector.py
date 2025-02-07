@@ -1,6 +1,6 @@
 import json
 import numpy as np 
-from dataloader import DataLoader
+from utils.dataloader import DataLoader
 
 class DataLoaderPoseSelector(DataLoader):
     def __init__(self, file_path, mode):

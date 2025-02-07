@@ -5,7 +5,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from dataloader import DataLoader
+from utils.dataloader import DataLoader
 
 # Directory containing the CSV files
 base = '/home/oline/3D_MoCap/'

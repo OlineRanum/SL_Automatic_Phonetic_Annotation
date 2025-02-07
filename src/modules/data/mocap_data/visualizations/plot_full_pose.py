@@ -1,9 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from dataloader import DataLoader
+from utils.dataloader import DataLoader
 from plotter import Plotter
-from normalizer import Normalizer
+from utils.normalizer import Normalizer
 
 # File path to the CSV file
 file_path = '/home/gomer/oline/3D_MoCap/data/9_markerData.csv'

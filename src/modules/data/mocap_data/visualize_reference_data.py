@@ -6,8 +6,8 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 from tqdm import tqdm
 import os
-from dataloader import DataLoader
-from normalizer import Normalizer
+from utils.dataloader import DataLoader
+from utils.normalizer import Normalizer
 import re
 class NewPlotter:
     def __init__(self, body_data, right_hand_data, right_wrist_data,
