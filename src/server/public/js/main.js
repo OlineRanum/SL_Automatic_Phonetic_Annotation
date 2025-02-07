@@ -35,25 +35,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+
 // Initialize specific tabs dynamically
 function initializeTab(tabId) {
     switch (tabId) {
         case 'AllNotes':
             break;
+            
         case 'DataViewer':
             import('./dataviewer/main_dataviewer.js')
                 .then(({ initDataViewer }) => initDataViewer())
                 .catch(error => console.error('Error loading Data Viewer module:', error));
             break;
-        case 'HandshapeViewer':
-            import('./modules/handshape.js')
-                .then(({ initHandshapeViewer }) => initHandshapeViewer())
-                .catch(error => console.error('Error loading Handshape Viewer module:', error));
-            break;
-        case 'MoCap':
-            import('./mocap/main_mocap.js')
-                .then(({ initMoCap }) => initMoCap())
-                .catch(error => console.error('Error loading MoCap module:', error));
+            case 'PhoneticModeling':
+                import('./phoneticmodelling/main_phonetics.js')
+                  .then(({ initPhoneticModeling }) => initPhoneticModeling())
+                  .catch(error => console.error('Error loading Phonetic Modeling module:', error));
+                break;
+        case 'DataManager':
+            import('./datamanager/main_manager.js')
+                .then(({ initDataManager }) => initDataManager())
+                .catch(error => console.error('Error loading data manager module:', error));
             break;
         default:
             console.warn(`No initialization script found for tab: ${tabId}`);

@@ -1,3 +1,4 @@
+export function initHandshapes() {}
 export function initHandshapeViewer() {
     // -------- Reference Poses Viewer Elements --------
     const poseSelectContainer    = document.getElementById('pose-select-container');

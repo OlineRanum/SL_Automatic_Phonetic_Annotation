@@ -1,18 +1,18 @@
 import { fetchMoCapGifs } from './mocap_data_viewer.js';
 
-export function initMoCap() {
-    const mocapContainer = document.getElementById('MoCap');
+export function initDataManager() {
+    const mocapContainer = document.getElementById('DataManager');
     if (!mocapContainer) {
-        console.error('MoCap container not found.');
+        console.error('DataManager container not found.');
         return;
     }
 
-    const referencePoseTab = document.getElementById('referencePoseTab');
+    const videoDataViewerTab = document.getElementById('videoDataViewerTab');
     const mocapDataViewerTab = document.getElementById('mocapDataViewerTab');
-    const mocapDataUploaderTab = document.getElementById('mocapDataUploaderTab');
-    const referencePoseContent = document.getElementById('referencePoseContent');
+    const mocapDataUploaderTab = document.getElementById('dataUploaderTab');
+    const videoDataViewerContent = document.getElementById('videoDataViewerContent');
     const mocapDataViewerContent = document.getElementById('mocapDataViewerContent');
-    const mocapDataUploaderContent = document.getElementById('mocapDataUploaderContent');
+    const dataUploaderContent = document.getElementById('dataUploaderContent');
 
     let modulesLoaded = {
         viewer: false,
@@ -28,13 +28,13 @@ export function initMoCap() {
         activeContent.style.display = 'block';
     }
 
-    if (referencePoseTab && referencePoseContent) {
-        referencePoseTab.addEventListener('click', () => {
-            switchTab(referencePoseTab, referencePoseContent);
+    if (videoDataViewerTab && videoDataViewerContent) {
+        videoDataViewerTab.addEventListener('click', () => {
+            switchTab(videoDataViewerTab, videoDataViewerContent);
             if (!modulesLoaded.reference) {
-                import('./reference_pose_selector.js')
-                    .then(({ initReferencePose }) => {
-                        initReferencePose();
+                import('./video_data_viewer.js')
+                    .then(({ initVideoDataViewer }) => {
+                        initVideoDataViewer();
                         modulesLoaded.reference = true;
                     })
                     .catch(err => console.error('Error loading Reference Pose module:', err));
@@ -57,20 +57,20 @@ export function initMoCap() {
         });
     }
 
-    if (mocapDataUploaderTab && mocapDataUploaderContent) {
+    if (mocapDataUploaderTab && dataUploaderContent) {
         mocapDataUploaderTab.addEventListener('click', () => {
-            switchTab(mocapDataUploaderTab, mocapDataUploaderContent);
+            switchTab(mocapDataUploaderTab, dataUploaderContent);
             if (!modulesLoaded.uploader) {
-                import('./mocap_data_uploader.js')
-                    .then(({ initMoCapDataUploader }) => {
-                        initMoCapDataUploader();
+                import('./data_uploader.js')
+                    .then(({ initDataUploader }) => {
+                        initDataUploader();
                         modulesLoaded.uploader = true;
                     })
-                    .catch(err => console.error('Error loading MoCap Data Uploader:', err));
+                    .catch(err => console.error('Error loading Data Uploader:', err));
             }
         });
     }
 
-    const defaultTab = mocapDataViewerTab || referencePoseTab || mocapDataUploaderTab;
+    const defaultTab = mocapDataUploaderTab || referencePoseTab || mocapDataViewerTab;
     if (defaultTab) defaultTab.click();
 }
