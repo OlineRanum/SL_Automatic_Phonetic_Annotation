@@ -57,7 +57,6 @@ h1, h2, h3, h4 {
    3) TAB CONTENT
 --------------------------- */
 .tabcontent {
-    display: none;
     padding: 20px;
     background-color: #fefefe;
     border: 1px solid #ddd;
@@ -207,7 +206,6 @@ h1, h2, h3, h4 {
    7) DataManager
 --------------------------- */
 #DataManager{
-    display: none;
     flex-direction: column;
     gap: 20px;
 }
@@ -355,6 +353,32 @@ h1, h2, h3, h4 {
     object-fit: cover; 
     margin-bottom: 0; 
 }
+
+.sub-sub-tab-menu {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    list-style: none;
+    padding: 0;
+  }
+  .sub-sub-tab-menu li {
+    background: #eee;
+    border: 1px solid #ccc;
+    padding: 0.5em 0.8em;
+    border-radius: 4px;
+  }
+  .sub-sub-tab-menu li.active {
+    background: #ddd;
+    font-weight: bold;
+  }
+  
+  .sub-sub-tab-content {
+    display: none; /* hide by default */
+  }
+  .sub-sub-tab-content.active {
+    display: block;
+  }
 
 /* ---------------------------
    9) RESPONSIVE DESIGN
