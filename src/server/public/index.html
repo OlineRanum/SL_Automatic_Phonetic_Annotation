@@ -1,269 +1,36 @@
-<!-- public/index.html -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Phonetic Modelling</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Phonetic Modelling</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Automatic Phonetic Annotation System</h1>
+  <h1>Automatic Phonetic Annotation System</h1>
 
-    <!-- Tab Buttons -->
-    <div class="tab">
-        <button class="tablinks active" data-tab="Welcome">Home</button>
-        <button class="tablinks" data-tab="DataManager">Data Manager</button>
-        <button class="tablinks" data-tab="PhoneticModeling">Phonetic Modelling</button>
-        <button class="tablinks" data-tab="DataViewer">Result Viewer</button>
-        <button class="tablinks" data-tab="AllNotes">All Notes</button>
-    </div>
-    <!-- =========================
-         Tab Content: Welcome
-         ========================= -->
-         <div id="Welcome" class="tabcontent" style="display: block;">
-            <h2>Welcome to the Automatic Phonetic Annotation System</h2>
-            <p>
-                This system is designed to help researchers, linguists, or practitioners easily manage
-                both video and MoCap data, run automated phonetic analyses, and review the annotated results.
-            </p>
-            <p>
-                Use the tabs above to:
-                <ul>
-                    <li><b>Data Manager</b> to upload and manage your CSV and video files,</li>
-                    <li><b>Phonetic Modelling</b> to visualize and annotate handshapes or poses,</li>
-                    <li><b>Result Viewer</b> to see processed GIFs or frames for close analysis, and</li>
-                    <li><b>All Notes</b> to collect your saved comments from all sessions.</li>
-                </ul>
-            </p>
-            <p>
-                We hope this tool streamlines your phonetic annotation workflow and makes it easier
-                to handle large amounts of motion capture or video data.
-            </p>
-        </div>
-    <!-- Tab Content: Data Viewer -->
-    <div id="DataViewer" class="tabcontent">
-        <div class="data-viewer-container">
-            <!-- GIF Viewer Section -->
-            <div class="gif-viewer">
-                <h2>GIF Viewer</h2>
-                <select id="gif-select">
-                    <option value="">--Select a GIF--</option>
-                    <!-- Options will be populated dynamically -->
-                </select>
-                <div id="loading" style="display: none;">
-                    Loading...
-                    <div id="progress-container">
-                        <div id="progress-bar"></div>
-                    </div>
-                </div>
-                <div class="frame-display">
-                    <img id="gif-image" src="" alt="Selected GIF Frame">
-                    <div id="frame-info">Frame: 0</div>
-                </div>
-                <div class="controls">
-                    <button id="prev-btn" disabled>Previous Frame</button>
-                    <button id="next-btn" disabled>Next Frame</button>
-                    <button id="toggle-play-btn" disabled>Play GIF</button>
-                    <label for="frame-rate">Frame Rate (ms):</label>
-                    <input type="number" id="frame-rate" value="200" min="10" max="1000">
-                </div>
-            </div>
+  <!-- Main Tabs -->
+  <div class="tab">
+    <button class="tablinks active" data-tab="Welcome">Home</button>
+    <button class="tablinks" data-tab="DataManager">Data Manager</button>
+    <button class="tablinks" data-tab="PhoneticModeling">Phonetic Modelling</button>
+    <button class="tablinks" data-tab="DataViewer">Result Viewer</button>
+    <button class="tablinks" data-tab="AllNotes">All Notes</button>
+  </div>
 
-            <!-- Note-Taking Section -->
-            <div class="note-taking">
-                <h2>Frame Notes</h2>
-                <textarea id="note-input" placeholder="Write your note here..."></textarea>
-                <button id="save-note-btn">Save Note</button>
+  <!-- A single container where partial HTML is injected for dynamic tabs -->
+  <div id="tab-content-container"></div>
 
-                <div id="notes-list">
-                    <!-- Notes will be dynamically added here -->
-                </div>
-            </div>
-        </div>
-    </div>
+  <!-- Global Notes Markup (always loaded) -->
+  <div id="AllNotes" class="tabcontent">
+      <h2>All Notes</h2>
+      <button id="update-all-notes-btn">Update Notes</button>
+      <div id="all-notes-list"></div>
+  </div>
 
-    <div id="PhoneticModeling" class="tabcontent" style="display: none;">
+  <!-- Notification -->
+  <div id="notification" class="notification"></div>
 
-    <h2>Phonetic Modeling</h2>
-    <p>Select a phonetic category:</p>
-
-    <!-- Sub-tab buttons -->
-    <div class="phonetic-subtabs">
-        <button id="handshapesTab" class="phonetic-tab-button">Handshapes</button>
-        <button id="locationTab"   class="phonetic-tab-button">Location</button>
-        <button id="orientationTab" class="phonetic-tab-button">Orientation</button>
-        <button id="movementTab" class="phonetic-tab-button">Movement</button>
-        <button id="allTab" class="phonetic-tab-button">All</button>
-    </div>
-
-    <!-- Sub-tab contents -->
-    <div id="handshapesContent" class="phonetic-tab-content" style="display: none;">
-        <h3>Handshapes</h3>
-        <!-- Handshapes UI goes here -->
-    </div>
-
-    <div id="locationContent" class="phonetic-tab-content" style="display: none;">
-        <h3>Location</h3>
-        <!-- Location UI goes here -->
-    </div>
-
-    <div id="orientationContent" class="phonetic-tab-content" style="display: none;">
-        <h3>Orientation</h3>
-        <!-- Orientation UI goes here -->
-    </div>
-
-    <div id="movementContent" class="phonetic-tab-content" style="display: none;">
-        <h3>Movement</h3>
-        <!-- Movement UI goes here -->	
-    </div>
-
-    <div id="allContent" class="phonetic-tab-content" style="display: none;">
-        <h3>All</h3>
-        <!-- All UI goes here -->
-    </div>
-    </div>
-    <!-- Tab Content: Reference Poses Viewer -->
-    <!-- <div id="HandshapeViewer" class="tabcontent">
-        <div class="reference-poses-layout"> 
-            <div class="pose-selection">
-                <label>Select Reference Poses:</label>
-                <button id="clear-all-btn">Clear All</button>
-                <div id="pose-select-container">
-                </div>
-            </div>
-
-            <div class="pose-display">
-                <div id="pose-loading" style="display: none;">
-                    Loading pose images...
-                </div>
-                <div id="reference-poses-container">
-                </div>
-            </div>
-        </div>
-    </div>-->
-
-    <!-- Tab Content: DataManager -->
-    <div id="DataManager" class="tabcontent">
-    <h2>Data Manager</h2>
-
-    <!-- Tabs within DataManager -->
-    <div class="tabs">
-        <button id="dataUploaderTab" class="mocap-tab-button">Upload Data</button>
-        <button id="mocapDataViewerTab" class="mocap-tab-button">Mocap Data</button>
-        <button id="videoDataViewerTab" class="mocap-tab-button">Video Data</button>
-    </div>
-
-    <!-- Tab Content for DataManager Uploader -->
-    <div class="mocap-tab-content" id="dataUploaderContent" style="display: block;">
-        <h2>Data Uploader</h2>
-        <p>Upload your Videos or MoCap files to the server:</p>
-        <form id="uploadForm" enctype="multipart/form-data">
-            <input type="file" id="fileInput" name="mocapFile" accept=".csv, .mp4, '.mov', '.avi', '.webm'" multiple />
-            <button type="submit">Upload</button>
-        </form>
-        <div id="uploadStatus"></div>
-    </div>
-    
-
-    <!-- Tab Content for 3D MoCap Data Viewer -->
-    <div class="mocap-tab-content" id="mocapDataViewerContent" style="display: none;">
-        <h2>Process Data & Produce Visualization</h2>
-        <p>Select files to process and produce visualizations:</p>
-        <select id="fileDropdown" multiple size="5" style="width: 100%;"></select>
-        <button id="processDataButton">Process Selected Files</button>
-        <button id="deleteDataButton">Delete Selected Files</button>
-        
-        <div id="processStatus"></div>
-        <div id="progressContainer">
-            <div id="progressBar"></div>
-        </div>
-
-        <h2>Pre-process and visualizse 3D MoCap Data</h2>
-        <div class="gif-viewer-container">
-            <div class="gif-viewer">
-                <h4>GIF Loader</h4>
-                <select id="mocap-gif-select">
-                    <option value="">--Select a GIF--</option>
-                    <!-- Options will be dynamically populated -->
-                </select>
-                <div id="mocap-loading" style="display: none;">
-                    Loading...
-                    <div id="mocap-progress-container">
-                        <div id="mocap-progress-bar"></div>
-                    </div>
-                </div>
-                <div class="frame-display">
-                    <img id="mocap-gif-image" src="" alt="Selected GIF Frame">
-                    <div id="mocap-frame-info">Frame: 0</div>
-                </div>
-                <div class="controls">
-                    <button id="mocap-prev-btn" disabled>Previous Frame</button>
-                    <button id="mocap-next-btn" disabled>Next Frame</button>
-                    <button id="mocap-toggle-play-btn" disabled>Play GIF</button>
-                    <label for="mocap-frame-rate">Frame Rate (ms):</label>
-                    <input type="number" id="mocap-frame-rate" value="200" min="10" max="1000">
-                </div>
-            </div>
-
-            <!-- Frame Index Tools -->
-            <div class="mocap-selected-frames-tools" style="margin-top: 20px;">
-                <div>
-                <h4>Store Frame Indexes</h4>
-                <label for="mocap-frame-input">Single or Range:</label>
-                <input type="text" id="mocap-frame-input" placeholder="e.g. 210 or 211-234">
-                <button id="mocap-save-frames-btn">Save</button>
-                <div id="mocap-saved-frames-list" style="margin-top: 10px;">
-                    <!-- Display stored frames dynamically -->
-                </div>
-            </div>
-
-            <!-- Frame Removal Tools -->
-            <div class="mocap-remove-frames-section" style="margin-top: 10px;">
-                <label for="mocap-remove-input">Remove Range:</label>
-                <input type="text" id="mocap-remove-input" placeholder="e.g. 211-234">
-                <button id="mocap-remove-frames-btn">Remove Range</button>
-            </div>
-        </div>
-    </div>
-    </div>
-
-    <!-- Tab Content for videoDataViewer -->
-    <div class="mocap-tab-content" id="videoDataViewerContent" style="display: none;">
-        <h3>Video Data</h3>
-        
-        <!-- We'll create two columns using a simple flex container -->
-        <div class="video-data-layout">
-            <!-- Left Column: List of Video Files -->
-            <div class="video-list-column">
-                <h4>Available Videos</h4>
-                <select id="video-file-select" size="10" style="width: 100%;">
-                    <!-- Options populated dynamically -->
-                </select>
-            </div>
-
-            <!-- Right Column: Video Player -->
-            <div class="video-player-column">
-                <h4>Video Player</h4>
-                <video id="video-player" controls>
-                    Your browser does not support the video tag.
-                </video>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tab Content: All Notes -->
-    <div id="AllNotes" class="tabcontent">
-        <h2>All Notes</h2>
-        <button id="update-all-notes-btn">Update Notes</button> <!-- Added Update Button -->
-        <div id="all-notes-list"></div>
-    </div>
-
-    <!-- Notification -->
-    <div id="notification" class="notification"></div>
-
-    <!-- Main Script -->
-    <script type="module" src="./js/main.js"></script>
-
+  <!-- Main Script -->
+  <script type="module" src="./js/main.js"></script>
 </body>
 </html>

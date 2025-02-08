@@ -1,0 +1,89 @@
+
+<div id="PhoneticModeling" class="tabcontent">
+
+    <h2>Phonetic Modeling</h2>
+    <p>Select a phonetic category:</p>
+
+    <!-- Sub-tab buttons -->
+    <div class="phonetic-subtabs">
+        <button id="handshapesTab" class="phonetic-tab-button">Handshapes</button>
+        <button id="locationTab"   class="phonetic-tab-button">Location</button>
+        <button id="orientationTab" class="phonetic-tab-button">Orientation</button>
+        <button id="movementTab" class="phonetic-tab-button">Movement</button>
+        <button id="allTab" class="phonetic-tab-button">All</button>
+    </div>
+
+    <div id="handshapesContent"   class="phonetic-tab-content" style="display: none;">
+        <h3>Handshapes</h3>
+    
+        <!-- =========== Sub-Subtab Menu for Handshapes =========== -->
+        <ul class="sub-sub-tab-menu" id="handshapes-subtab-menu">
+            <!-- We do NOT set any to "active" by default -->
+            <li data-tab="reference-handshapes">See Reference Handshapes</li>
+            <li data-tab="cluster-handshapes">Cluster &amp; Select Reference Poses</li>
+            <li data-tab="predict-handshapes">Predict Handshapes</li>
+        </ul>
+        
+        <!-- Sub-SubTab 1: See Reference Handshapes -->
+        <div class="sub-sub-tab-content" id="reference-handshapes">
+            <button id="clear-all-btn" disabled>Clear All</button>
+            <div id="pose-loading" style="display: none;">Loading...</div>
+            <div id="pose-select-container"></div>
+            <div id="reference-poses-container" style="margin-top: 1rem;"></div>
+        </div>
+        
+        <!-- Sub-SubTab 2: Cluster & Select Reference Poses -->
+        <div class="sub-sub-tab-content" id="cluster-handshapes">
+            <!-- Placeholder content for now -->
+            <h4>Cluster &amp; Select Reference Poses</h4>
+            <p>Some UI or script for your cluster logic can go here.</p>
+        </div>
+        
+        <!-- Sub-SubTab 3: Predict Handshapes -->
+        <div class="sub-sub-tab-content" id="predict-handshapes">
+            <!-- Placeholder content for now -->
+            <h4>Predict Handshapes</h4>
+            <p>Some UI or script for your prediction logic can go here.</p>
+        </div>
+        <!-- =========== End of Sub-Subtab Menu for Handshapes =========== -->  
+        
+    
+    <div id="locationContent" class="phonetic-tab-content" style="display: none;">
+        <h3>Location</h3>
+        <!-- Location UI goes here -->
+    </div>
+
+    <div id="orientationContent" class="phonetic-tab-content" style="display: none;">
+        <h3>Orientation</h3>
+        <!-- Orientation UI goes here -->
+    </div>
+
+    <div id="movementContent" class="phonetic-tab-content" style="display: none;">
+        <h3>Movement</h3>
+        <!-- Movement UI goes here -->	
+    </div>
+
+    <div id="allContent" class="phonetic-tab-content" style="display: none;">
+        <h3>All</h3>
+        <!-- All UI goes here -->
+    </div>
+    </div>
+    <!-- Tab Content: Reference Poses Viewer -->
+    <!-- <div id="HandshapeViewer" class="tabcontent">
+        <div class="reference-poses-layout"> 
+            <div class="pose-selection">
+                <label>Select Reference Poses:</label>
+                <button id="clear-all-btn">Clear All</button>
+                <div id="pose-select-container">
+                </div>
+            </div>
+
+            <div class="pose-display">
+                <div id="pose-loading" style="display: none;">
+                    Loading pose images...
+                </div>
+                <div id="reference-poses-container">
+                </div>
+            </div>
+        </div>
+    </div>-->

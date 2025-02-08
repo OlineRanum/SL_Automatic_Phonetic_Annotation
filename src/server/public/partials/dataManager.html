@@ -1,0 +1,110 @@
+
+    <!-- Tab Content: DataManager -->
+    <div id="DataManager" class="tabcontent">
+        <h2>Data Manager</h2>
+    
+        <!-- Tabs within DataManager -->
+        <div class="tabs">
+            <button id="dataUploaderTab" class="mocap-tab-button">Upload Data</button>
+            <button id="mocapDataViewerTab" class="mocap-tab-button">Mocap Data</button>
+            <button id="videoDataViewerTab" class="mocap-tab-button">Video Data</button>
+        </div>
+    
+        <!-- Tab Content for DataManager Uploader -->
+        <div class="mocap-tab-content" id="dataUploaderContent" style="display: block;">
+            <h2>Data Uploader</h2>
+            <p>Upload your Videos or MoCap files to the server:</p>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" id="fileInput" name="mocapFile" accept=".csv, .mp4, '.mov', '.avi', '.webm'" multiple />
+                <button type="submit">Upload</button>
+            </form>
+            <div id="uploadStatus"></div>
+        </div>
+        
+    
+        <!-- Tab Content for 3D MoCap Data Viewer -->
+        <div class="mocap-tab-content" id="mocapDataViewerContent" style="display: none;">
+            <h2>Process Data & Produce Visualization</h2>
+            <p>Select files to process and produce visualizations:</p>
+            <select id="fileDropdown" multiple size="5" style="width: 100%;"></select>
+            <button id="processDataButton">Process Selected Files</button>
+            <button id="deleteDataButton">Delete Selected Files</button>
+            
+            <div id="processStatus"></div>
+            <div id="progressContainer">
+                <div id="progressBar"></div>
+            </div>
+    
+            <h2>Pre-process and visualizse 3D MoCap Data</h2>
+            <div class="gif-viewer-container">
+                <div class="gif-viewer">
+                    <h4>GIF Loader</h4>
+                    <select id="mocap-gif-select">
+                        <option value="">--Select a GIF--</option>
+                        <!-- Options will be dynamically populated -->
+                    </select>
+                    <div id="mocap-loading" style="display: none;">
+                        Loading...
+                        <div id="mocap-progress-container">
+                            <div id="mocap-progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="frame-display">
+                        <img id="mocap-gif-image" src="" alt="Selected GIF Frame">
+                        <div id="mocap-frame-info">Frame: 0</div>
+                    </div>
+                    <div class="controls">
+                        <button id="mocap-prev-btn" disabled>Previous Frame</button>
+                        <button id="mocap-next-btn" disabled>Next Frame</button>
+                        <button id="mocap-toggle-play-btn" disabled>Play GIF</button>
+                        <label for="mocap-frame-rate">Frame Rate (ms):</label>
+                        <input type="number" id="mocap-frame-rate" value="200" min="10" max="1000">
+                    </div>
+                </div>
+    
+                <!-- Frame Index Tools -->
+                <div class="mocap-selected-frames-tools" style="margin-top: 20px;">
+                    <div>
+                    <h4>Store Frame Indexes</h4>
+                    <label for="mocap-frame-input">Single or Range:</label>
+                    <input type="text" id="mocap-frame-input" placeholder="e.g. 210 or 211-234">
+                    <button id="mocap-save-frames-btn">Save</button>
+                    <div id="mocap-saved-frames-list" style="margin-top: 10px;">
+                        <!-- Display stored frames dynamically -->
+                    </div>
+                </div>
+    
+                <!-- Frame Removal Tools -->
+                <div class="mocap-remove-frames-section" style="margin-top: 10px;">
+                    <label for="mocap-remove-input">Remove Range:</label>
+                    <input type="text" id="mocap-remove-input" placeholder="e.g. 211-234">
+                    <button id="mocap-remove-frames-btn">Remove Range</button>
+                </div>
+            </div>
+        </div>
+        </div>
+    
+        <!-- Tab Content for videoDataViewer -->
+        <div class="mocap-tab-content" id="videoDataViewerContent" style="display: none;">
+            <h3>Video Data</h3>
+            
+            <!-- We'll create two columns using a simple flex container -->
+            <div class="video-data-layout">
+                <!-- Left Column: List of Video Files -->
+                <div class="video-list-column">
+                    <h4>Available Videos</h4>
+                    <select id="video-file-select" size="10" style="width: 100%;">
+                        <!-- Options populated dynamically -->
+                    </select>
+                </div>
+    
+                <!-- Right Column: Video Player -->
+                <div class="video-player-column">
+                    <h4>Video Player</h4>
+                    <video id="video-player" controls>
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            </div>
+        </div>
+    

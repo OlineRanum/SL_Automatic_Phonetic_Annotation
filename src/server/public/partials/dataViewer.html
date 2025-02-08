@@ -1,0 +1,41 @@
+    <!-- Tab Content: Data Viewer -->
+    <div id="DataViewer" class="tabcontent">
+        <div class="data-viewer-container">
+            <!-- GIF Viewer Section -->
+            <div class="gif-viewer">
+                <h2>GIF Viewer</h2>
+                <select id="gif-select">
+                    <option value="">--Select a GIF--</option>
+                    <!-- Options will be populated dynamically -->
+                </select>
+                <div id="loading" style="display: none;">
+                    Loading...
+                    <div id="progress-container">
+                        <div id="progress-bar"></div>
+                    </div>
+                </div>
+                <div class="frame-display">
+                    <img id="gif-image" src="" alt="Selected GIF Frame">
+                    <div id="frame-info">Frame: 0</div>
+                </div>
+                <div class="controls">
+                    <button id="prev-btn" disabled>Previous Frame</button>
+                    <button id="next-btn" disabled>Next Frame</button>
+                    <button id="toggle-play-btn" disabled>Play GIF</button>
+                    <label for="frame-rate">Frame Rate (ms):</label>
+                    <input type="number" id="frame-rate" value="200" min="10" max="1000">
+                </div>
+            </div>
+
+            <!-- Note-Taking Section -->
+            <div class="note-taking">
+                <h2>Frame Notes</h2>
+                <textarea id="note-input" placeholder="Write your note here..."></textarea>
+                <button id="save-note-btn">Save Note</button>
+
+                <div id="notes-list">
+                    <!-- Notes will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+    </div>
