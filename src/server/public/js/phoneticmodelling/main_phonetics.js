@@ -11,11 +11,15 @@ export function initPhoneticModeling() {
     const handshapesTab   = document.getElementById('handshapesTab');
     const locationTab     = document.getElementById('locationTab');
     const orientationTab  = document.getElementById('orientationTab');
+    const movementTab    = document.getElementById('movementTab');
+    const allTab         = document.getElementById('allTab');
   
     // Sub-tab contents
     const handshapesContent  = document.getElementById('handshapesContent');
     const locationContent    = document.getElementById('locationContent');
     const orientationContent = document.getElementById('orientationContent');
+    const movementContent    = document.getElementById('movementContent');
+    const allContent         = document.getElementById('allContent');
   
     // Keep track of which module(s) have been loaded
     // (handshapes, location, orientation). 
@@ -25,6 +29,8 @@ export function initPhoneticModeling() {
       handshapes:   false,
       location:     false,
       orientation:  false,
+      movement:     false,
+      all:          false
     };
   
     // Switch sub-tab function
@@ -94,10 +100,44 @@ export function initPhoneticModeling() {
         }
       });
     }
+
+    // ----- Movement Tab -----
+    if (movementTab && movementContent) {
+      movementTab.addEventListener('click', () => {
+        switchSubTab(movementTab, movementContent);
+  
+        if (!modulesLoaded.movement) {
+          // Example: lazy-load an "movement.js" module
+          import('./movement.js')
+            .then(({ initMovement }) => {
+              initMovement();
+              modulesLoaded.movement = true;
+            })
+            .catch(err => console.error('Error loading movement module:', err));
+        }
+      });
+    }
+
+    // ----- All Tab -----
+    if (allTab && allContent) {
+      allTab.addEventListener('click', () => {
+        switchSubTab(allTab, allContent);
+  
+        if (!modulesLoaded.all) {
+          // Example: lazy-load an "all.js" module
+          import('./all.js')
+            .then(({ initAll }) => {
+              initAll();
+              modulesLoaded.all = true;
+            })
+            .catch(err => console.error('Error loading all module:', err));
+        }
+      });
+    }
   
     // Optionally auto-click the first sub-tab on load
     // If you want “Handshapes” by default:
-    const defaultTab = handshapesTab || locationTab || orientationTab;
+    const defaultTab = allTab || handshapesTab || locationTab || orientationTab || movementTab ;
     if (defaultTab) defaultTab.click();
   }
   
