@@ -6,11 +6,11 @@
 
     <!-- Sub-tab buttons -->
     <div class="phonetic-subtabs">
+        <button id="allTab" class="phonetic-tab-button">All</button>
         <button id="handshapesTab" class="phonetic-tab-button">Handshapes</button>
         <button id="locationTab"   class="phonetic-tab-button">Location</button>
         <button id="orientationTab" class="phonetic-tab-button">Orientation</button>
         <button id="movementTab" class="phonetic-tab-button">Movement</button>
-        <button id="allTab" class="phonetic-tab-button">All</button>
     </div>
 
     <div id="handshapesContent"   class="phonetic-tab-content" style="display: none;">
@@ -34,9 +34,38 @@
         
         <!-- Sub-SubTab 2: Cluster & Select Reference Poses -->
         <div class="sub-sub-tab-content" id="cluster-handshapes">
-            <!-- Placeholder content for now -->
             <h4>Cluster &amp; Select Reference Poses</h4>
-            <p>Some UI or script for your cluster logic can go here.</p>
+        
+            <!-- Data Type Selection (radio buttons) -->
+            <div>
+            <label>
+                <input type="radio" name="dataType" value="mocap"> Motion Capture
+            </label>
+            <label>
+                <input type="radio" name="dataType" value="video"> Video
+            </label>
+            </div>
+        
+            <!-- Container to display the list of files once dataType is selected -->
+            <div id="data-files-container" style="margin: 1rem 0;">
+            <!-- Files (checkboxes) will be dynamically inserted here -->
+            </div>
+        
+            <!-- Checkbox for precropped data -->
+            <div style="margin: 0.5rem 0;">
+            <label>
+                <input type="checkbox" id="use-precropped"> Use precropped data
+            </label>
+            </div>
+        
+            <!-- Input for number of clusters (k) -->
+            <div style="margin: 0.5rem 0;">
+            <label for="cluster-k-input">Number of clusters (k):</label>
+            <input type="number" id="cluster-k-input" min="1" value="5" style="width: 60px;">
+            </div>
+        
+            <!-- Process button to run the backend clustering -->
+            <button id="cluster-process-btn">Process</button>
         </div>
         
         <!-- Sub-SubTab 3: Predict Handshapes -->

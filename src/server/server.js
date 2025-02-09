@@ -27,6 +27,7 @@ const sbReferencesRoutes = require('./server_utils/routes/sbReferencesRoutes');
 const notesRoutes = require('./server_utils/routes/notesRoutes');
 const mocapGifsRoutes = require('./server_utils/routes/mocapGifsRoutes');
 const dataMocapRoutes = require('./server_utils/routes/dataRoutes');
+const clusterRoutes = require('./server_utils/routes/clusterRoutes');
 
 // Mount routes
 app.use('/api/graphics/gifs', gifsRoutes);
@@ -35,8 +36,7 @@ app.use('/api/graphics/sb_references', sbReferencesRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/graphics/mocap_gifs', mocapGifsRoutes);
 app.use('/api/data', dataMocapRoutes);
-
-
+app.use('/api/cluster', clusterRoutes);
 
 
 // Start the server
