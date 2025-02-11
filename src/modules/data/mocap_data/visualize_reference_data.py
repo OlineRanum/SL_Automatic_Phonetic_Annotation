@@ -4,14 +4,18 @@ matplotlib.use('Agg')  # Use a non-interactive backend if running on a server
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.animation import FuncAnimation, FFMpegWriter
-from tqdm import tqdm
 import os
-from utils.dataloader import DataLoader
-from utils.normalizer import Normalizer
+try:
+    from src.modules.data.mocap_data.utils.dataloader import DataLoader
+    from src.modules.data.mocap_data.utils.normalizer import Normalizer
+except ModuleNotFoundError as e:
+    from utils.dataloader import DataLoader
+    from utils.normalizer import Normalizer
 import re
-class NewPlotter:
-    def __init__(self, body_data, right_hand_data, right_wrist_data,
-                 frames_dir, edges, hand_edges, marker_names,marker_names_hands, frames_to_skip, save_frames=True):
+
+class Plotter:
+    def __init__(self, body_data= None, right_hand_data= None, right_wrist_data= None,
+                 frames_dir= None, edges= None, hand_edges= None, marker_names= None,marker_names_hands = None, cluster_data = None, frames_to_skip = 10, save_frames=True):
         """
         Args:
             body_data (ndarray):       Shape (num_frames, num_body_points, 3)
@@ -29,20 +33,24 @@ class NewPlotter:
         self.marker_names = marker_names
         self.marker_names_hands = marker_names_hands
         self.frames_to_skip = frames_to_skip    
+        self.cluster_data = cluster_data
         
-
-        self.num_frames = len(body_data)
+        try:
+            self.num_frames = len(body_data)
+        except:
+            self.num_frames = len(cluster_data)
         self.frames_dir = frames_dir
         self.save_frames = save_frames
 
         # Create frames directory if it doesn't exist
-        if not os.path.exists(self.frames_dir):
-            os.makedirs(self.frames_dir, exist_ok=True)
-        else:
-            # Optionally clear out old frames
-            for file in os.listdir(self.frames_dir):
-                if file.endswith('.png'):
-                    os.remove(os.path.join(self.frames_dir, file))
+        if self.frames_dir is not None:
+            if not os.path.exists(self.frames_dir):
+                os.makedirs(self.frames_dir, exist_ok=True)
+            else:
+                # Optionally clear out old frames
+                for file in os.listdir(self.frames_dir):
+                    if file.endswith('.png'):
+                        os.remove(os.path.join(self.frames_dir, file))
 
         # Placeholders for figure, axes, scatter objects, etc.
         self.fig = None
@@ -51,6 +59,51 @@ class NewPlotter:
         self.scatter_rhand_angle1 = None
         self.scatter_rhand_angle2 = None
         self.scatter_wrist_r = None
+
+    def plot_cluster_centers(self, filename='cluster_centers.png'):
+        """
+        Plots each cluster center as a 3D scatter plot with edges between keypoints.
+        """
+        n_clusters = len(self.cluster_data)
+        cols = 3  # Set number of columns in the grid
+        rows = int(np.ceil(n_clusters / cols))  # Compute number of rows needed
+
+        fig = plt.figure(figsize=(cols * 4, rows * 4))
+        gs = GridSpec(rows, cols, figure=fig, wspace=0.4, hspace=0.4)
+
+        # Mapping from marker names to their indices
+        name_to_index_hands = {name: idx for idx, name in enumerate(self.marker_names_hands)}
+
+        for i, (cluster_label, cluster_center) in enumerate(self.cluster_data.items()):
+            row, col = divmod(i, cols)  # Get grid position
+            ax = fig.add_subplot(gs[row, col], projection='3d')
+            ax.set_title(f'{cluster_label}')
+
+            # Extract keypoints for this cluster (should be shape (21, 3))
+            x, y, z = cluster_center[:, 0], cluster_center[:, 1], cluster_center[:, 2]
+            
+            # Plot keypoints
+            ax.scatter(x, y, z, c='red', s=10)
+
+            # Plot edges
+            for edge in self.hand_edges:
+                if edge[0] in name_to_index_hands and edge[1] in name_to_index_hands:
+                    idx1, idx2 = name_to_index_hands[edge[0]], name_to_index_hands[edge[1]]
+                    ax.plot(
+                        [x[idx1], x[idx2]],
+                        [y[idx1], y[idx2]],
+                        [z[idx1], z[idx2]],
+                        c='k'
+                    )
+
+            # Set axis labels
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y')
+            ax.set_zlabel('Z')
+        #plt.suptitle('Cluster Centers')
+        fig.tight_layout()
+        plt.savefig(self.frames_dir + '/'+filename[:-4]+'.png')
+
 
     def _initialize_figure(self):
         """Set up the 2×3 grid layout and initialize subplots."""
@@ -304,7 +357,7 @@ def process_file(file_path, frames_dir, gifs_dir, frames_to_skip=10, fps=15):
     normalized_right_wrist = normalizer.normalize_wrist(right_wrist)
 
     # Create and save animation
-    plotter = NewPlotter(
+    plotter = Plotter(
         body_data=normalized_body_data,
         right_hand_data=normalized_right_handshape,
         right_wrist_data=normalized_right_wrist,

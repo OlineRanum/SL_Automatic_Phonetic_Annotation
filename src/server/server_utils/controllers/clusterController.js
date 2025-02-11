@@ -4,7 +4,7 @@ const path = require('path');
 
 exports.clusterHandshapes = (req, res) => {
   // 1) Extract data from the request body
-  const { dataType, files, precropped, k } = req.body;
+  const { dataType, files, precropped, k, visualize } = req.body;
 
   // Validate if you want
   if (!dataType || !files || !Array.isArray(files) || files.length === 0) {
@@ -16,15 +16,17 @@ exports.clusterHandshapes = (req, res) => {
   const filesArg = files.join(',');
 
   // 3) Build the arguments array for Python
-  //    e.g. script.py dataType k precropped files
+  //    e.g. script.py dataType k precropped 
   //    You can structure them however you like.
   const scriptPath = path.resolve(__dirname, '../../../modules/handshapes/utils/process_clustering.py');
+  
   const args = [
     scriptPath, 
     dataType,
     String(k),
     precropped ? 'true' : 'false',
-    filesArg
+    filesArg,
+    visualize ? 'true' : 'false'
   ];
 
   console.log('Spawning Python script with args:', args);
@@ -69,4 +71,5 @@ exports.clusterHandshapes = (req, res) => {
       data: parsed
     });
   });
+  console.log('Completed.');
 };

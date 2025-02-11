@@ -168,7 +168,9 @@ export function initClusterSubTab() {
     const usePrecroppedCheckbox= document.getElementById('use-precropped');
     const clusterKInput        = document.getElementById('cluster-k-input');
     const processButton        = document.getElementById('cluster-process-btn');
-  
+    const useVisualizeCheckbox             = document.getElementById('visualize-checkbox'); 
+
+
     // Step 1: Handle dataType selection
     dataTypeRadios.forEach(radio => {
       radio.addEventListener('change', () => {
@@ -225,6 +227,8 @@ export function initClusterSubTab() {
       const selectedDataType = Array.from(dataTypeRadios).find(r => r.checked)?.value;
       const usePrecropped    = usePrecroppedCheckbox.checked;
       const kValue           = parseInt(clusterKInput.value, 10) || 1;
+      const useVisualize        = useVisualizeCheckbox.checked;
+      console.log('Visualize checkbox value:', useVisualize);
   
       // Collect all checked files
       const checkedBoxes  = dataFilesContainer.querySelectorAll('input[type="checkbox"]:checked');
@@ -244,15 +248,15 @@ export function initClusterSubTab() {
         return;
       }
   
-    // The user has selected dataType ("mocap" or "video"), chosen some files, 
-    // decided if precropped is true, and picked k = e.g. 5
 
     const bodyPayload = {
         dataType: selectedDataType, 
         files: selectedFiles,
         precropped: usePrecropped,
-        k: kValue
+        k: kValue,
+        visualize: useVisualize
     };
+
     
     fetch('/api/cluster/handshapes', {
         method: 'POST',

@@ -40,7 +40,7 @@ app.use('/api/cluster', clusterRoutes);
 
 
 // Start the server
-const PORT = process.env.PORT || 2007;
+const PORT = process.env.PORT || 2008;
 app.listen(PORT, () => {
     console.log(`Server is running at http://localhost:${PORT}`);
 });

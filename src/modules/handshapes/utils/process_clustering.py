@@ -3,14 +3,27 @@ import sys
 import os
 import json
 
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
+sys.path.insert(0, root_dir)  
+
+try:
+    from src.modules.data.mocap_data.utils.dataloader import DataLoader
+    from src.modules.data.mocap_data.utils.normalizer import Normalizer
+    from src.modules.data.mocap_data.visualize_reference_data import Plotter
+except ModuleNotFoundError as e:
+    print(json.dumps({f"Module not found: {e}"}))
+    
+    sys.exit(1)
+
 def main():
     # sys.argv[0] is the script name
     # sys.argv[1] -> dataType (e.g. "mocap", "video")
     # sys.argv[2] -> k (integer)
     # sys.argv[3] -> precropped ("true" or "false")
     # sys.argv[4] -> filesArg (comma-separated file names)
+    # sys.argv[5] -> visualize ("true" or "false")
 
-    if len(sys.argv) < 5:
+    if len(sys.argv) < 6:
         print(json.dumps({"error": "Insufficient arguments"}))
         sys.exit(1)
 
@@ -20,11 +33,14 @@ def main():
     precropped = (precropped_str == 'true')
     files_arg = sys.argv[4]
     files_list = files_arg.split(',') 
+    visualize_str = sys.argv[5].lower()
+    visualize = (visualize_str == 'true')
 
     result = {
         "dataType": data_type,
         "k": k,
         "precropped": precropped,
+        "visualize": visualize,
         "files": files_list,
         "clusters": [] 
     }
@@ -49,35 +65,37 @@ def main():
         mocap_basepath = '/home/oline/SL_Automatic_Phonetic_Annotation/src/server/public/data/mocap'
 
         for file_name in files_list:
-            file_path = os.path.join(mocap_basepath, file_name)
+            file_path = os.path.join(mocap_basepath, file_name)            
+            loader = DataLoader(file_path, mode='hand')
+                
+            normalizer = Normalizer(loader)
 
-            # Read the CSV with pandas
-            try:
-                data = pd.read_csv(file_path, low_memory=False)
-                data = data.iloc[:, :-1]
-                numeric_data = data.select_dtypes(include=[np.number])
-                data = numeric_data.dropna()  # Remove rows with any NaN
-                data = data[::1000, :]
-                print(data, file=sys.stderr)
-            except Exception as e:
-                print(json.dumps({
-                    "error": f"Failed to read CSV: {file_name}",
-                    "details": str(e)
-                }))
-                sys.exit(1)
-
-            # If precropped, filter rows to the indexes stored in precropped_indexes
-            if precropped:
-                if file_name in precropped_indexes:
-                    exclude_idx = precropped_indexes[file_name]
-                    data = data.loc[~data.index.isin(exclude_idx)]
+            # Load and preprocess data
+            loader.load_data()
+            normalizer.load_transformations()
+            right_hand, marker_names_hands = loader.get_hand()
+            normalized_right_handshape = normalizer.normalize_handshape(right_hand, marker_names_hands)
+            hand_edges = loader.prepare_hand_data()
             
+            if precropped:
+                if file_name.split('_marker')[0] in precropped_indexes:
+                    exclude_idx = precropped_indexes[file_name.split('_')[0]]
+                    exclude_idx = [idx for idx in exclude_idx if idx < normalized_right_handshape.shape[0]]
+                    normalized_right_handshape = np.delete(normalized_right_handshape, exclude_idx, axis=0)
+
+
+            valid_frames = ~np.isnan(normalized_right_handshape).any(axis=(1, 2))
+
+            # Keep only valid frames
+            cleaned_array = normalized_right_handshape[valid_frames]
+            normalized_right_handshape = cleaned_array[::2]
+
             kmeans = KMeans(n_clusters=k, random_state=42)
-            kmeans.fit(numeric_data)
-
-
+            reshaped = normalized_right_handshape.reshape(normalized_right_handshape.shape[0], -1)
+            kmeans.fit(reshaped)
+            
             centers = kmeans.cluster_centers_
-            print(centers, file=sys.stderr)
+            centers = centers.reshape(k, -1, 3)
 
             # Build an array of { clusterId, center }
             file_cluster_info = []
@@ -89,26 +107,38 @@ def main():
                     "center": center_array
                 })
 
-            result["clusters"].append({
-                "filename": file_name,
-                "numRows": len(numeric_data),
-                "labelsPreview": kmeans.labels_[:10].tolist()  # first 10 labels
-            })
-
             clustering_outputs[file_name] = file_cluster_info
+            cluster_data = {f"Cluster {i}": center for i, center in enumerate(centers)}
 
         # Write the entire dictionary of cluster centers to a new JSON file
         output_json_path = '/home/oline/SL_Automatic_Phonetic_Annotation/src/server/public/output/mocap_clusters.json'
+        if os.path.exists(output_json_path):
+            try:
+                with open(output_json_path, 'r') as f:
+                    existing_data = json.load(f)
+            except json.JSONDecodeError:
+                existing_data = {}  # Reset if JSON is unreadable
+        else:
+            existing_data = {}  # Initialize empty dictionary if file does not exist
+
+        existing_data.update(clustering_outputs)
+
         try:
             with open(output_json_path, 'w') as f:
-                json.dump(clustering_outputs, f, indent=2)
+                json.dump(existing_data, f, indent=2)
         except Exception as e:
             print(json.dumps({
-                "error": f"Failed to write clustering output to JSON file",
+                "error": "Failed to write clustering output to JSON file",
                 "details": str(e)
             }))
-            
             sys.exit(1)
+
+        print(visualize, flush=True, file=sys.stderr)
+        if visualize:
+            save_dir = '/home/oline/SL_Automatic_Phonetic_Annotation/src/server/public/graphics/mocap_reference_poses'
+            plotter = Plotter(cluster_data=cluster_data, marker_names_hands= marker_names_hands ,hand_edges = hand_edges, frames_dir= save_dir)
+            plotter.plot_cluster_centers(file_name)
+
 
     elif data_type == 'video':
         raise NotImplementedError("Video processing not yet implemented.")
@@ -116,8 +146,23 @@ def main():
     else:
         result["error"] = f"Unknown data type: {data_type}"
 
-    # Print final JSON to stdout so Node can parse it
-    print(json.dumps(result))
+
+    try:
+        output = {
+            "status": "success",
+            "message": "Clustering completed."
+        }
+        print(json.dumps(output))
+        sys.exit(0)  # Exit cleanly
+    except Exception as e:
+        print(json.dumps({
+            "error": "Failed to generate JSON output",
+            "details": str(e)
+        }))
+        sys.exit(1)  # Exit with error
+
+
+
 
 if __name__ == "__main__":
     main()
