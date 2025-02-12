@@ -1,7 +1,9 @@
 import numpy as np 
 import pandas as pd
-from utils.normalizer import Normalizer
-
+try:
+    from src.modules.data.mocap_data.utils.normalizer import Normalizer
+except ModuleNotFoundError as e:
+    from utils.normalizer import Normalizer
 class DataLoader:
     def __init__(self, file_path, mode = 'hand'):
         self.file_path = file_path
@@ -148,7 +150,9 @@ class DataLoader:
         return self.edges
         
     def load_data(self, mode = 'noframe'):
+
         df = self.load_marker_data(self.file_path)
+        
         if mode == 'noframe':
             new_columns = []
         else: new_columns = ['Frame']
@@ -160,12 +164,16 @@ class DataLoader:
             new_columns.append(idx + '<T-X>')
             new_columns.append(idx + '<T-Y>')
             new_columns.append(idx + '<T-Z>')
+        if "Unnamed: 220" in df.columns:
+            df = df.drop(columns=["Unnamed: 220"])
         self.df = df[new_columns]
         return self.df
     
     def load_marker_data(self, file_path):
-        # Read the CSV file while skipping the header row ("Jose3")
+        # Read the CSV file while skipping the header row
+        file_path = '/home/oline/SL_Automatic_Phonetic_Annotation/src/server/public/data/mocap/V_markerData.csv'
         df = pd.read_csv(file_path, skiprows=1)
+
         return df
 
     def get_marker_data(self, frame):

@@ -1,4 +1,4 @@
-import { initReferencePoseHSViewer } from './handshape_modules/handshapes_modules.js';
+import { initReferencePoseHSViewer, initClusterSubTab } from './handshape_modules/handshapes_modules.js';
 
 export function initHandshapes() {
   // 1. Initialize your sub-subtab menu
@@ -6,6 +6,7 @@ export function initHandshapes() {
   const contents  = document.querySelectorAll('.sub-sub-tab-content');
 
   let referencePosesLoaded = false;
+  let clusterSubTabLoaded = false;
 
   menuItems.forEach((item) => {
     item.addEventListener('click', () => {
@@ -24,6 +25,11 @@ export function initHandshapes() {
       if (targetId === 'reference-handshapes' && !referencePosesLoaded) {
             initReferencePoseHSViewer();
             referencePosesLoaded = true;
+        }
+        if (targetId === 'cluster-handshapes' && !clusterSubTabLoaded) {
+            console.log('Initializing cluster subtab');
+            initClusterSubTab();
+            clusterSubTabLoaded = true;
         }
     });
   });
